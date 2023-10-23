@@ -1,0 +1,162 @@
+package upstream
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/miekg/dns"
+	"github.com/rnetx/cdns/adapter"
+	"github.com/rnetx/cdns/log"
+	"github.com/rnetx/cdns/utils"
+)
+
+type Options struct {
+	Tag          string
+	Type         string
+	QueryTimeout time.Duration
+
+	UDPOptions   *UDPUpstreamOptions
+	TCPOptions   *TCPUpstreamOptions
+	TLSOptions   *TLSUpstreamOptions
+	HTTPSOptions *HTTPSUpstreamOptions
+	QUICOptions  *QUICUpstreamOptions
+
+	RandomOptions    *RandomUpstreamOptions
+	ParallelOptions  *ParallelUpstreamOptions
+	QueryTestOptions *QueryTestUpstreamOptions
+}
+
+type _Options struct {
+	Tag          string         `yaml:"tag"`
+	Type         string         `yaml:"type"`
+	QueryTimeout utils.Duration `yaml:"query-timeout"`
+}
+
+func (o *Options) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var _o _Options
+	err := unmarshal(&_o)
+	if err != nil {
+		return err
+	}
+	var data any
+	switch _o.Type {
+	case UDPUpstreamType:
+		o.UDPOptions = &UDPUpstreamOptions{}
+		data = o.UDPOptions
+	case TCPUpstreamType:
+		o.TCPOptions = &TCPUpstreamOptions{}
+		data = o.TCPOptions
+	case TLSUpstreamType:
+		o.TLSOptions = &TLSUpstreamOptions{}
+		data = o.TLSOptions
+	case HTTPSUpstreamType:
+		o.HTTPSOptions = &HTTPSUpstreamOptions{}
+		data = o.HTTPSOptions
+	case QUICUpstreamType:
+		o.QUICOptions = &QUICUpstreamOptions{}
+		data = o.QUICOptions
+	case RandomUpstreamType:
+		o.RandomOptions = &RandomUpstreamOptions{}
+		data = o.RandomOptions
+	case ParallelUpstreamType:
+		o.ParallelOptions = &ParallelUpstreamOptions{}
+		data = o.ParallelOptions
+	case QueryTestUpstreamType:
+		o.QueryTestOptions = &QueryTestUpstreamOptions{}
+		data = o.QueryTestOptions
+	default:
+		return fmt.Errorf("unknown upstream type: %s", _o.Type)
+	}
+	err = unmarshal(data)
+	if err != nil {
+		return err
+	}
+	o.Type = _o.Type
+	o.Tag = _o.Tag
+	o.QueryTimeout = time.Duration(_o.QueryTimeout)
+	return nil
+}
+
+const DefaultRetry = 3
+
+type GenericUpstream struct {
+	adapter.Upstream
+	queryTimeout time.Duration
+	retry        int
+}
+
+func (g *GenericUpstream) Start() error {
+	starter, isStarter := g.Upstream.(adapter.Starter)
+	if isStarter {
+		return starter.Start()
+	}
+	return nil
+}
+
+func (g *GenericUpstream) Close() error {
+	closer, isCloser := g.Upstream.(adapter.Closer)
+	if isCloser {
+		return closer.Close()
+	}
+	return nil
+}
+
+func (g *GenericUpstream) Exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
+	ctx, cancel := context.WithDeadline(ctx, time.Now().Add(g.queryTimeout))
+	defer cancel()
+	var lastErr error
+	for i := 0; i < g.retry; i++ {
+		resp, err := g.Upstream.Exchange(ctx, req)
+		if err == nil {
+			return resp, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+			lastErr = err
+		}
+	}
+	return nil, lastErr
+}
+
+func NewUpstream(ctx context.Context, core adapter.Core, logger log.Logger, tag string, options Options) (adapter.Upstream, error) {
+	var (
+		u   adapter.Upstream
+		err error
+	)
+	switch options.Type {
+	case UDPUpstreamType:
+		u, err = NewUDPUpstream(ctx, core, logger, tag, *options.UDPOptions)
+	case TCPUpstreamType:
+		u, err = NewTCPUpstream(ctx, core, logger, tag, *options.TCPOptions)
+	case TLSUpstreamType:
+		u, err = NewTLSUpstream(ctx, core, logger, tag, *options.TLSOptions)
+	case HTTPSUpstreamType:
+		u, err = NewHTTPSUpstream(ctx, core, logger, tag, *options.HTTPSOptions)
+	case QUICUpstreamType:
+		u, err = NewQUICUpstream(ctx, core, logger, tag, *options.QUICOptions)
+	case RandomUpstreamType:
+		u, err = NewRandomUpstream(ctx, core, logger, tag, *options.RandomOptions)
+	case ParallelUpstreamType:
+		u, err = NewParallelUpstream(ctx, core, logger, tag, *options.ParallelOptions)
+	case QueryTestUpstreamType:
+		u, err = NewQueryTestUpstream(ctx, core, logger, tag, *options.QueryTestOptions)
+	default:
+		return nil, fmt.Errorf("unknown upstream type: %s", options.Type)
+	}
+	if err != nil {
+		return nil, err
+	}
+	queryTimeout := options.QueryTimeout
+	if queryTimeout <= 0 {
+		queryTimeout = DefaultQueryTimeout
+	}
+	u = &GenericUpstream{
+		queryTimeout: queryTimeout,
+		retry:        DefaultRetry,
+		Upstream:     u,
+	}
+	return u, nil
+}
