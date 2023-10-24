@@ -8,13 +8,18 @@ import (
 	"sync/atomic"
 )
 
+type ReadSeekCloser interface {
+	io.ReadSeeker
+	io.Closer
+}
+
 type Reader struct {
-	reader       io.ReadSeeker
+	reader       ReadSeekCloser
 	domainIndex  map[string]int
 	domainLength map[string]int
 }
 
-func Open(path string) (*Reader, []string, error) {
+func OpenGeoSiteReader(path string) (*Reader, []string, error) {
 	content, err := os.Open(path)
 	if err != nil {
 		return nil, nil, err
@@ -104,6 +109,10 @@ func (r *Reader) Read(code string) ([]Item, error) {
 	}
 	_, err = r.reader.Seek(int64(-index)-counter.Count(), io.SeekCurrent)
 	return domain, err
+}
+
+func (r *Reader) Close() error {
+	return r.reader.Close()
 }
 
 type readCounter struct {

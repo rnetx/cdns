@@ -79,20 +79,12 @@ func (l *SimpleLogger) printContext(ctx context.Context, level Level, msg string
 	} else {
 		m += fmt.Sprintf("[%s] ", level.String())
 	}
-	dnsContext := adapter.LoadFromContext(ctx)
-	if dnsContext != nil {
+	logContext := adapter.LoadLogContext(ctx)
+	if logContext != nil {
 		if !l._disableColor {
-			m += fmt.Sprintf("[%s] ", aurora.Colorize(fmt.Sprintf("%d %dms", dnsContext.ID(), dnsContext.Duration().Milliseconds()), dnsContext.Color()))
+			m += fmt.Sprintf("[%s] ", aurora.Colorize(fmt.Sprintf("%d %dms", logContext.ID(), logContext.Duration().Milliseconds()), logContext.Color()))
 		} else {
-			m += fmt.Sprintf("[%d %dms] ", dnsContext.ID(), dnsContext.Duration().Milliseconds())
-		}
-	}
-	apiLogCtx := adapter.LoadAPIContext(ctx)
-	if apiLogCtx != nil {
-		if !l._disableColor {
-			m += fmt.Sprintf("[%s] ", aurora.Colorize(fmt.Sprintf("%d %dms", apiLogCtx.ID(), apiLogCtx.Duration().Milliseconds()), apiLogCtx.Color()))
-		} else {
-			m += fmt.Sprintf("[%d %dms] ", apiLogCtx.ID(), apiLogCtx.Duration().Milliseconds())
+			m += fmt.Sprintf("[%d %dms] ", logContext.ID(), logContext.Duration().Milliseconds())
 		}
 	}
 	m += msg

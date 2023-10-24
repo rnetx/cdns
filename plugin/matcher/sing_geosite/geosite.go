@@ -3,8 +3,11 @@ package sing_geosite
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
+	"sync"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/plugin"
@@ -26,6 +29,7 @@ type Args struct {
 var (
 	_ adapter.PluginMatcher = (*SingGeoSite)(nil)
 	_ adapter.Starter       = (*SingGeoSite)(nil)
+	_ adapter.APIHandler    = (*SingGeoSite)(nil)
 )
 
 type SingGeoSite struct {
@@ -37,7 +41,8 @@ type SingGeoSite struct {
 	path string
 	code []string
 
-	ruleMap map[string]*domain.DomainSet
+	ruleMap    map[string]*domain.DomainSet
+	reloadLock sync.Mutex
 }
 
 func NewSingGeoSite(ctx context.Context, _ adapter.Core, logger log.Logger, tag string, args any) (adapter.PluginMatcher, error) {
@@ -68,13 +73,15 @@ func (s *SingGeoSite) Type() string {
 }
 
 func (s *SingGeoSite) Start() error {
-	reader, codes, err := Open(s.path)
+	return s.loadRule()
+}
+
+func (s *SingGeoSite) loadRule() error {
+	reader, codes, err := OpenGeoSiteReader(s.path)
 	if err != nil {
 		return fmt.Errorf("open sing-geosite file failed: %s, errors: %s", s.path, err)
 	}
-	if len(s.code) == 0 {
-		return fmt.Errorf("missing code")
-	}
+	defer reader.Close()
 	var loadCodes []string
 	if len(s.code) == 0 {
 		loadCodes = codes
@@ -89,7 +96,7 @@ func (s *SingGeoSite) Start() error {
 			}
 		}
 	}
-	s.ruleMap = make(map[string]*domain.DomainSet, len(loadCodes))
+	ruleMap := make(map[string]*domain.DomainSet, len(loadCodes))
 	for _, code := range loadCodes {
 		items, err := reader.Read(code)
 		if err != nil {
@@ -99,8 +106,9 @@ func (s *SingGeoSite) Start() error {
 		if err != nil {
 			return fmt.Errorf("compile sing-geosite file failed: %s, errors: compile rule: %s", s.path, err)
 		}
-		s.ruleMap[code] = ss
+		ruleMap[code] = ss
 	}
+	s.ruleMap = ruleMap
 	s.logger.Infof("load %d codes", len(s.ruleMap))
 	return nil
 }
@@ -116,6 +124,7 @@ func (s *SingGeoSite) LoadRunningArgs(_ context.Context, argsID uint64, args any
 	for _, code := range codes {
 		c := strings.Split(code, ",")
 		for _, cc := range c {
+			cc = strings.TrimSpace(cc)
 			if _, ok := seen[cc]; !ok {
 				seen[cc] = struct{}{}
 				formatCodes = append(formatCodes, cc)
@@ -149,4 +158,34 @@ func (s *SingGeoSite) Match(ctx context.Context, dnsCtx *adapter.DNSContext, arg
 		}
 	}
 	return false, nil
+}
+
+func (s *SingGeoSite) reloadHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !s.reloadLock.TryLock() {
+			w.WriteHeader(http.StatusTooManyRequests)
+			return
+		}
+		defer s.reloadLock.Unlock()
+		s.logger.Infof("reload sing-geosite rule...")
+		err := s.loadRule()
+		if err != nil {
+			s.logger.Errorf("reload sing-geosite rule failed: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			s.logger.Infof("reload sing-geosite rule success")
+			w.WriteHeader(http.StatusNoContent)
+		}
+	}
+}
+
+func (s *SingGeoSite) APIHandler() chi.Router {
+	builder := utils.NewChiRouterBuilder()
+	builder.Add(&utils.ChiRouterBuilderItem{
+		Path:        "/reload",
+		Methods:     []string{http.MethodGet},
+		Description: "reload sing-geosite rule.",
+		Handler:     s.reloadHandler(),
+	})
+	return builder.Build()
 }

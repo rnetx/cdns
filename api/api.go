@@ -99,8 +99,8 @@ func (s *APIServer) logMiddleware() func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			apiLogContext := adapter.NewAPILogContext()
-			ctx = adapter.SaveAPIContext(ctx, apiLogContext)
-			s.logger.InfofContext(ctx, "request: %s %s", r.Method, r.URL.Path)
+			ctx = adapter.SaveLogContext(ctx, apiLogContext)
+			s.logger.DebugfContext(ctx, "request: %s %s %s", r.RemoteAddr, r.Method, r.URL.Path)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -158,20 +158,26 @@ func (s *APIServer) initHTTPRouter() http.Handler {
 		upstreamRouter := chi.NewRouter()
 		upstreams := s.core.GetUpstreams()
 		for _, u := range upstreams {
-			upstreamRouter.Get("/"+u.Tag(), func(w http.ResponseWriter, r *http.Request) {
-				data := u.StatisticalData()
-				raw, err := json.Marshal(data)
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-				} else {
-					w.WriteHeader(http.StatusOK)
-					w.Header().Set("Content-Type", "application/json")
-					w.Write(raw)
+			upstreamRouter.Get("/"+u.Tag(), func(u adapter.Upstream) func(w http.ResponseWriter, r *http.Request) {
+				return func(w http.ResponseWriter, r *http.Request) {
+					data := map[string]any{
+						"tag":  u.Tag(),
+						"type": u.Type(),
+						"data": u.StatisticalData(),
+					}
+					raw, err := json.Marshal(data)
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+					} else {
+						w.WriteHeader(http.StatusOK)
+						w.Header().Set("Content-Type", "application/json")
+						w.Write(raw)
+					}
 				}
-			})
+			}(u))
 		}
 		upstreamRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			data := make([]map[string]any, len(upstreams))
+			data := make([]map[string]any, 0, len(upstreams))
 			for _, u := range upstreams {
 				data = append(data, map[string]any{
 					"tag":  u.Tag(),
@@ -191,17 +197,21 @@ func (s *APIServer) initHTTPRouter() http.Handler {
 		r.Mount("/upstream", upstreamRouter)
 		pluginMatcherRouter := chi.NewRouter()
 		pluginMatchers := s.core.GetPluginMatchers()
+		pluginMatcherHandlerExist := make(map[string]bool, len(pluginMatchers))
 		for _, pm := range pluginMatchers {
 			apiHandler, isAPIHandler := pm.(adapter.APIHandler)
-			if isAPIHandler {
-				pluginMatcherRouter.Mount("/"+pm.Tag(), apiHandler.APIHandler())
+			if isAPIHandler && apiHandler != nil {
+				httpHandler := apiHandler.APIHandler()
+				if httpHandler != nil {
+					pluginMatcherHandlerExist[pm.Tag()] = true
+					pluginMatcherRouter.Mount("/"+pm.Tag(), httpHandler)
+				}
 			}
 		}
 		pluginMatcherRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			data := make([]map[string]any, len(pluginMatchers))
+			data := make([]map[string]any, 0, len(pluginMatchers))
 			for _, pm := range pluginMatchers {
-				_, isAPIHandler := pm.(adapter.APIHandler)
-				if isAPIHandler {
+				if pluginMatcherHandlerExist[pm.Tag()] {
 					data = append(data, map[string]any{
 						"tag":  pm.Tag(),
 						"type": pm.Type(),
@@ -220,17 +230,21 @@ func (s *APIServer) initHTTPRouter() http.Handler {
 		r.Mount("/plugin/matcher", pluginMatcherRouter)
 		pluginExecutorRouter := chi.NewRouter()
 		pluginExecutors := s.core.GetPluginExecutors()
-		for _, pm := range pluginExecutors {
-			apiHandler, isAPIHandler := pm.(adapter.APIHandler)
-			if isAPIHandler {
-				pluginExecutorRouter.Mount("/"+pm.Tag(), apiHandler.APIHandler())
+		pluginExecutorHandlerExist := make(map[string]bool, len(pluginExecutors))
+		for _, pe := range pluginExecutors {
+			apiHandler, isAPIHandler := pe.(adapter.APIHandler)
+			if isAPIHandler && apiHandler != nil {
+				httpHandler := apiHandler.APIHandler()
+				if httpHandler != nil {
+					pluginExecutorHandlerExist[pe.Tag()] = true
+					pluginExecutorRouter.Mount("/"+pe.Tag(), httpHandler)
+				}
 			}
 		}
 		pluginExecutorRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			data := make([]map[string]any, len(pluginExecutors))
+			data := make([]map[string]any, 0, len(pluginExecutors))
 			for _, pm := range pluginExecutors {
-				_, isAPIHandler := pm.(adapter.APIHandler)
-				if isAPIHandler {
+				if pluginExecutorHandlerExist[pm.Tag()] {
 					data = append(data, map[string]any{
 						"tag":  pm.Tag(),
 						"type": pm.Type(),

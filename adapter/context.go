@@ -40,6 +40,8 @@ func idToColor(id uint32) aurora.Color {
 	return color
 }
 
+var _ LogContext = (*DNSContext)(nil)
+
 type DNSContext struct {
 	ctx      context.Context
 	initTime time.Time
@@ -60,14 +62,13 @@ type DNSContext struct {
 
 func NewDNSContext(ctx context.Context, listener string, clientIP netip.Addr, req *dns.Msg) *DNSContext {
 	c := &DNSContext{
+		ctx:      ctx,
 		initTime: time.Now(),
 		id:       randomID(),
 		listener: listener,
 		clientIP: clientIP,
 		req:      req,
 	}
-	ctx = c.SaveToContext(ctx)
-	c.ctx = ctx
 	return c
 }
 
@@ -92,28 +93,6 @@ func (c *DNSContext) Duration() time.Duration {
 
 func (c *DNSContext) Context() context.Context {
 	return c.ctx
-}
-
-var DNSContextKey = (*struct{})(nil)
-
-func (c *DNSContext) SaveToContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, DNSContextKey, c)
-}
-
-func LoadFromContext(ctx context.Context) *DNSContext {
-	if ctx == nil {
-		return nil
-	}
-	v := ctx.Value(DNSContextKey)
-	if v == nil {
-		return nil
-	}
-	c, ok := v.(*DNSContext)
-	if ok {
-		return c
-	} else {
-		return nil
-	}
 }
 
 func (c *DNSContext) Clone() *DNSContext {

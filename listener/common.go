@@ -153,6 +153,7 @@ func reqMessageInfo(req *dns.Msg) string {
 func listenerHandle(ctx context.Context, listener string, logger log.Logger, workflow adapter.Workflow, req *dns.Msg, clientAddr netip.AddrPort) *dns.Msg {
 	dnsCtx := adapter.NewDNSContext(ctx, listener, clientAddr.Addr(), req)
 	ctx = dnsCtx.Context()
+	ctx = adapter.SaveLogContext(ctx, dnsCtx)
 	logger.DebugfContext(ctx, "new request: %s", reqMessageInfo(req))
 	defer func() {
 		err := recover()
