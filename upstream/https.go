@@ -29,12 +29,11 @@ type HTTPSUpstreamOptions struct {
 	Address          string             `yaml:"address"`
 	ConnectTimeout   utils.Duration     `yaml:"connect-timeout,omitempty"`
 	IdleTimeout      utils.Duration     `yaml:"idle-timeout,omitempty"`
-	TLSCOptions      TLSOptions         `yaml:",inline,omitempty"`
+	TLSOptions       TLSOptions         `yaml:",inline,omitempty"`
 	UseHTTP3         bool               `yaml:"use-http3,omitempty"`
 	UsePost          bool               `yaml:"use-post,omitempty"`
 	Path             string             `yaml:"path,omitempty"`
 	Headers          map[string]string  `yaml:"headers,omitempty"`
-	Enable0RTT       bool               `yaml:"enable-0rtt,omitempty"`
 	BootstrapOptions *bootstrap.Options `yaml:"bootstrap,omitempty"`
 	DialerOptions    network.Options    `yaml:",inline,omitempty"`
 }
@@ -65,14 +64,15 @@ type HTTPSUpstream struct {
 	connectTimeout time.Duration
 	idleTimeout    time.Duration
 
-	tlsConfig  *tls.Config
-	useHTTP3   bool
-	usePost    bool
-	enable0RTT bool
-	url        url.URL
-	headers    http.Header
+	tlsConfig *tls.Config
+	useHTTP3  bool
+	usePost   bool
+	url       url.URL
+	headers   http.Header
 
-	httpClient *http.Client
+	httpClient     *http.Client
+	httpTransport  *http.Transport
+	http3Transport *http3.RoundTripper
 }
 
 func NewHTTPSUpstream(ctx context.Context, core adapter.Core, logger log.Logger, tag string, options HTTPSUpstreamOptions) (adapter.Upstream, error) {
@@ -114,7 +114,6 @@ func NewHTTPSUpstream(ctx context.Context, core adapter.Core, logger log.Logger,
 	}
 	u.useHTTP3 = options.UseHTTP3
 	u.usePost = options.UsePost
-	u.enable0RTT = options.Enable0RTT
 	var host string
 	if options.Headers != nil && len(options.Headers) > 0 {
 		headers := make(http.Header)
@@ -172,7 +171,7 @@ func NewHTTPSUpstream(ctx context.Context, core adapter.Core, logger log.Logger,
 		uri.RawQuery = q.Encode()
 	}
 	u.url = *uri
-	tlsConfig, err := newTLSConfig(options.TLSCOptions)
+	tlsConfig, err := newTLSConfig(options.TLSOptions)
 	if err != nil {
 		return nil, fmt.Errorf("create https upstream failed: create tls config: %s", err)
 	}
@@ -220,25 +219,26 @@ func (u *HTTPSUpstream) Start() error {
 	}
 	var httpTransport http.RoundTripper
 	if !u.useHTTP3 {
-		httpTransport = &http.Transport{
-			ForceAttemptHTTP2: true,
-			IdleConnTimeout:   u.idleTimeout,
-			TLSClientConfig:   u.tlsConfig.Clone(),
+		u.httpTransport = &http.Transport{
+			ForceAttemptHTTP2:   true,
+			IdleConnTimeout:     u.idleTimeout,
+			MaxIdleConnsPerHost: 16,
+			TLSClientConfig:     u.tlsConfig.Clone(),
 			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
 				conn, err := u.newTCPConn(ctx)
 				if err != nil {
 					return nil, err
 				}
 				u.logger.Debug("new tcp connection")
-				return conn, nil
+				return newHTTPTCPConn(conn, u.logger), nil
 			},
 		}
+		httpTransport = u.httpTransport
 	} else {
-		httpTransport = &http3.RoundTripper{
+		u.http3Transport = &http3.RoundTripper{
 			TLSClientConfig: u.tlsConfig.Clone(),
 			QuicConfig: &quic.Config{
 				MaxIdleTimeout: u.idleTimeout,
-				Allow0RTT:      u.enable0RTT,
 			},
 			Dial: func(ctx context.Context, _ string, tlsCfg *tls.Config, cfg *quic.Config) (quic.EarlyConnection, error) {
 				udpConn, remoteAddr, err := u.newUDPPacketConn(ctx)
@@ -250,9 +250,10 @@ func (u *HTTPSUpstream) Start() error {
 					return nil, err
 				}
 				u.logger.Debug("new quic connection")
-				return quicConnection, nil
+				return newHTTPQUICEarlyConn(quicConnection, u.logger), nil
 			},
 		}
+		httpTransport = u.http3Transport
 	}
 	u.httpClient = &http.Client{
 		Transport: httpTransport,
@@ -263,6 +264,12 @@ func (u *HTTPSUpstream) Start() error {
 func (u *HTTPSUpstream) Close() error {
 	if u.bootstrap != nil {
 		u.bootstrap.Close()
+	}
+	if !u.useHTTP3 {
+		u.httpTransport.CloseIdleConnections()
+	} else {
+		u.http3Transport.CloseIdleConnections()
+		u.http3Transport.Close()
 	}
 	return nil
 }
@@ -388,4 +395,71 @@ func (u *HTTPSUpstream) Exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, e
 		resp.Id = req.Id
 	}
 	return resp, err
+}
+
+type HTTPTCPConn struct {
+	net.Conn
+	logger   log.Logger
+	isClosed bool
+}
+
+func newHTTPTCPConn(conn net.Conn, logger log.Logger) *HTTPTCPConn {
+	return &HTTPTCPConn{
+		Conn:   conn,
+		logger: logger,
+	}
+}
+
+func (c *HTTPTCPConn) Close() error {
+	if !c.isClosed {
+		c.logger.Debug("close tcp connection")
+		c.isClosed = true
+	}
+	return c.Conn.Close()
+}
+
+type HTTPQUICEarlyConn struct {
+	quic.EarlyConnection
+	logger   log.Logger
+	isClosed bool
+}
+
+func newHTTPQUICEarlyConn(conn quic.EarlyConnection, logger log.Logger) *HTTPQUICEarlyConn {
+	return &HTTPQUICEarlyConn{
+		EarlyConnection: conn,
+		logger:          logger,
+	}
+}
+
+func (c *HTTPQUICEarlyConn) CloseWithError(code quic.ApplicationErrorCode, reason string) error {
+	if !c.isClosed {
+		c.logger.Debug("close quic early connection")
+		c.isClosed = true
+	}
+	return c.EarlyConnection.CloseWithError(code, reason)
+}
+
+func (c *HTTPQUICEarlyConn) NextConnection() quic.Connection {
+	return newHTTPQUICConn(c.EarlyConnection.NextConnection(), c.logger)
+}
+
+type HTTPQUICConn struct {
+	quic.Connection
+	logger   log.Logger
+	isClosed bool
+}
+
+func newHTTPQUICConn(conn quic.Connection, logger log.Logger) *HTTPQUICConn {
+	return &HTTPQUICConn{
+		Connection: conn,
+		logger:     logger,
+	}
+}
+
+func (c *HTTPQUICConn) CloseWithError(code quic.ApplicationErrorCode, reason string) error {
+	if !c.isClosed {
+		c.logger.Debug("close quic connection")
+		c.isClosed = true
+	}
+	return c.Connection.CloseWithError(code, reason)
 }

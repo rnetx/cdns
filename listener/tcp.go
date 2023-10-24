@@ -1,14 +1,11 @@
 package listener
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"net"
 	"net/netip"
-	"os"
 	"time"
 
 	"github.com/miekg/dns"
@@ -23,10 +20,7 @@ type TCPListenerOptions struct {
 	MaxConnection int            `yaml:"max-connection,omitempty"`
 }
 
-const (
-	TCPListenerType  = "tcp"
-	TCPMaxBufferSize = 65537
-)
+const TCPListenerType = "tcp"
 
 var (
 	_ adapter.Listener = (*TCPListener)(nil)
@@ -136,43 +130,42 @@ func (l *TCPListener) serve(conn net.Conn) {
 		l.logger.Debugf("parse client address failed: %s", err)
 		return
 	}
-	buffer := bytes.NewBuffer(make([]byte, 0, TCPMaxBufferSize))
 	for {
 		err = conn.SetReadDeadline(time.Now().Add(l.idleTimeout))
 		if err != nil {
-			l.logger.Errorf("set read deadline failed: %s", err)
+			if !connIsClosed(err) {
+				l.logger.Errorf("set read deadline failed: %s", err)
+			}
 			return
 		}
-		_, err = conn.Read(buffer.Bytes())
+		var length uint16
+		err = binary.Read(conn, binary.BigEndian, &length)
 		if err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				return
+			if !connIsClosed(err) {
+				l.logger.Errorf("read data failed: %s", err)
 			}
-			if errors.Is(err, os.ErrDeadlineExceeded) {
-				return
-			}
-			l.logger.Errorf("read data failed: %s", err)
 			return
 		}
-		if buffer.Len() < 2 {
-			l.logger.Error("invalid length")
-			return
-		}
-		length := 0
-		binary.Read(buffer, binary.BigEndian, &length)
 		if length == 0 {
-			l.logger.Error("invalid length")
+			if !connIsClosed(err) {
+				l.logger.Error("invalid length")
+			}
 			return
 		}
 		data := make([]byte, length)
-		copy(data, buffer.Bytes()[2:2+length])
+		_, err = conn.Read(data)
+		if err != nil {
+			if !connIsClosed(err) {
+				l.logger.Errorf("read data failed: %s", err)
+			}
+			return
+		}
 		req := &dns.Msg{}
 		err = req.Unpack(data)
 		if err != nil {
 			l.logger.Errorf("unpack dns message failed: %s", err)
 			return
 		}
-		buffer.Reset()
 		go func(req *dns.Msg) {
 			resp := l.Handle(l.ctx, req, addr)
 			if resp != nil {

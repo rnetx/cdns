@@ -26,8 +26,7 @@ type QUICUpstreamOptions struct {
 	Address          string             `yaml:"address"`
 	ConnectTimeout   utils.Duration     `yaml:"connect-timeout,omitempty"`
 	IdleTimeout      utils.Duration     `yaml:"idle-timeout,omitempty"`
-	TLSCOptions      TLSOptions         `yaml:",inline,omitempty"`
-	Enable0RTT       bool               `yaml:"enable-0rtt,omitempty"`
+	TLSOptions       TLSOptions         `yaml:",inline,omitempty"`
 	BootstrapOptions *bootstrap.Options `yaml:"bootstrap,omitempty"`
 	DialerOptions    network.Options    `yaml:",inline,omitempty"`
 }
@@ -101,7 +100,7 @@ func NewQUICUpstream(ctx context.Context, core adapter.Core, logger log.Logger, 
 	} else {
 		u.idleTimeout = DefaultIdleTimeout
 	}
-	tlsConfig, err := newTLSConfig(options.TLSCOptions)
+	tlsConfig, err := newTLSConfig(options.TLSOptions)
 	if err != nil {
 		return nil, fmt.Errorf("create quic upstream failed: create tls config: %s", err)
 	}
@@ -116,9 +115,6 @@ func NewQUICUpstream(ctx context.Context, core adapter.Core, logger log.Logger, 
 	tlsConfig.MinVersion = tls.VersionTLS13
 	u.tlsConfig = tlsConfig
 	u.quicConfig = &quic.Config{}
-	if options.Enable0RTT {
-		u.quicConfig.Allow0RTT = true
-	}
 	return u, nil
 }
 

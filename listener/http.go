@@ -25,6 +25,7 @@ type HTTPListenerOptions struct {
 	ReadIPHeader string                 `yaml:"read-ip-header,omitempty"`
 	TrustIP      utils.Listable[string] `yaml:"trust-ip,omitempty"`
 	UseHTTP3     bool                   `yaml:"use-http3,omitempty"`
+	Enable0RTT   bool                   `yaml:"enable-0rtt,omitempty"`
 	TLSOptions   *TLSOptions            `yaml:",inline,omitempty"`
 }
 
@@ -54,7 +55,8 @@ type HTTPListener struct {
 	realIPHeader string
 	trustIP      []netip.Prefix
 
-	tlsConfig *tls.Config
+	tlsConfig  *tls.Config
+	enable0RTT bool
 
 	listener     net.Listener
 	quicListener *quic.EarlyListener
@@ -125,7 +127,9 @@ func NewHTTPListener(ctx context.Context, core adapter.Core, logger log.Logger, 
 			}
 			return nil, fmt.Errorf("create http listener failed: invalid trust-ip: %s", s)
 		}
+		l.trustIP = trustIP
 	}
+	l.enable0RTT = options.Enable0RTT
 	if workflow == "" {
 		return nil, fmt.Errorf("create http listener failed: missing workflow")
 	}
@@ -158,7 +162,11 @@ func (l *HTTPListener) Start() error {
 			l.listener, err = tls.Listen("tcp", l.listen, l.tlsConfig.Clone())
 		}
 		if err != nil {
-			return fmt.Errorf("listen http failed: %s, error: %s", l.listen, err)
+			if l.tlsConfig == nil {
+				return fmt.Errorf("listen http failed: %s, error: %s", l.listen, err)
+			} else {
+				return fmt.Errorf("listen https failed: %s, error: %s", l.listen, err)
+			}
 		}
 		go httpServer.Serve(l.listener)
 	} else {
@@ -166,14 +174,22 @@ func (l *HTTPListener) Start() error {
 			Handler: l.newHTTPHandle(),
 		}
 		l.quicListener, err = quic.ListenAddrEarly(l.listen, l.tlsConfig, &quic.Config{
-			Allow0RTT: true,
+			Allow0RTT: l.enable0RTT,
 		})
 		if err != nil {
-			return fmt.Errorf("listen http failed: %s, error: %s", l.listen, err)
+			return fmt.Errorf("listen http3 failed: %s, error: %s", l.listen, err)
 		}
 		go http3Server.ServeListener(l.quicListener)
 	}
-	l.logger.Infof("http listener: listen %s", l.listen)
+	if !l.useHTTP3 {
+		if l.tlsConfig == nil {
+			l.logger.Infof("http listener: listen %s", l.listen)
+		} else {
+			l.logger.Infof("https listener: listen %s", l.listen)
+		}
+	} else {
+		l.logger.Infof("http3 listener: listen %s", l.listen)
+	}
 	return nil
 }
 

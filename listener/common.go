@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/netip"
 	"os"
@@ -54,6 +56,25 @@ func parseListen(listen string, defaultPort uint16) (string, error) {
 		return "", fmt.Errorf("invalid listen: %s, error: invalid port", listen)
 	}
 	return net.JoinHostPort(ip.String(), strconv.FormatUint(portUint16, 10)), nil
+}
+
+func connIsClosed(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, io.EOF) {
+		return true
+	}
+	if errors.Is(err, net.ErrClosed) {
+		return true
+	}
+	if errors.Is(err, os.ErrDeadlineExceeded) {
+		return true
+	}
+	if opErr, ok := err.(*net.OpError); ok {
+		return opErr.Op == "read" && opErr.Err.Error() == "use of closed network connection"
+	}
+	return false
 }
 
 type TLSOptions struct {

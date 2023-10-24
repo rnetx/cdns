@@ -1,12 +1,12 @@
 package listener
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"net/netip"
 	"os"
 	"time"
@@ -26,10 +26,7 @@ type QUICListenerOptions struct {
 	TLSOptions    TLSOptions     `yaml:",inline,omitempty"`
 }
 
-const (
-	QUICListenerType  = "quic"
-	QUICMaxBufferSize = TCPMaxBufferSize
-)
+const QUICListenerType = "quic"
 
 var (
 	_ adapter.Listener = (*QUICListener)(nil)
@@ -184,32 +181,48 @@ func (l *QUICListener) serve(conn quic.Connection) {
 			return
 		}
 		cancel()
-		go l.serveStream(stream, addr)
+		go l.serveStream(conn, stream, addr)
 	}
 }
 
-func (l *QUICListener) serveStream(stream quic.Stream, clientAddr netip.AddrPort) {
+func (l *QUICListener) serveStream(quicConn quic.Connection, stream quic.Stream, clientAddr netip.AddrPort) {
 	defer l.limiter.PutBack()
-	buffer := make([]byte, 0, QUICMaxBufferSize)
-	_, err := stream.Read(buffer)
+	defer stream.Close()
+	//
+	err := stream.SetReadDeadline(time.Now().Add(l.idleTimeout))
 	if err != nil {
-		l.logger.Errorf("read stream failed: %s", err)
-		stream.Close()
+		if !connIsClosed(err) {
+			l.logger.Errorf("set read deadline failed: %s", err)
+			quicConn.CloseWithError(0x5, "idle timeout")
+		}
 		return
 	}
-	stream.Close()
-	if len(buffer) < 2 {
-		l.logger.Error("invalid length")
+	var length uint16
+	err = binary.Read(stream, binary.BigEndian, &length)
+	if err != nil {
+		if !connIsClosed(err) {
+			l.logger.Errorf("read data failed: %s", err)
+			quicConn.CloseWithError(0x5, "idle timeout")
+		}
 		return
 	}
-	length := 0
-	binary.Read(bytes.NewReader(buffer), binary.BigEndian, &length)
 	if length == 0 {
 		l.logger.Error("invalid length")
+		quicConn.CloseWithError(0x2, "invalid length")
+		return
+	}
+	data := make([]byte, length)
+	var n int
+	n, err = stream.Read(data)
+	if err != nil && !errors.Is(err, io.EOF) {
+		if !connIsClosed(err) {
+			l.logger.Errorf("read data failed: %s", err)
+			quicConn.CloseWithError(0x2, "invalid length")
+		}
 		return
 	}
 	req := &dns.Msg{}
-	err = req.Unpack(buffer[2 : 2+length])
+	err = req.Unpack(data[:n])
 	if err != nil {
 		l.logger.Errorf("unpack dns message failed: client address: %s, error: %s", clientAddr.String(), err)
 		return

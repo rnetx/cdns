@@ -105,6 +105,7 @@ func (p *Pool[T]) Close() {
 			if p.closeFunc != nil {
 				p.closeFunc(item.v)
 			}
+			continue
 		default:
 		}
 		break
