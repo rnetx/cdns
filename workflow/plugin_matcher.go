@@ -9,7 +9,7 @@ import (
 type PluginMatcher struct {
 	tag     string
 	args    any
-	argsID  uint64
+	argsID  uint16
 	matcher adapter.PluginMatcher
 }
 

@@ -9,7 +9,7 @@ import (
 type PluginExecutor struct {
 	tag      string
 	args     any
-	argsID   uint64
+	argsID   uint16
 	executor adapter.PluginExecutor
 }
 

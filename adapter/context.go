@@ -52,9 +52,10 @@ type DNSContext struct {
 	clientIP netip.Addr
 	req      *dns.Msg
 	//
-	resp     *dns.Msg
-	mark     uint64
-	metadata map[string]string
+	resp            *dns.Msg
+	respUpstreamTag string
+	mark            uint64
+	metadata        map[string]string
 	//
 	extraExchanges []ExtraExchange
 	exchangeHooks  []ExchangeHook
@@ -154,6 +155,14 @@ func (c *DNSContext) RespMsg() *dns.Msg {
 
 func (c *DNSContext) SetRespMsg(resp *dns.Msg) {
 	c.resp = resp
+}
+
+func (c *DNSContext) RespUpstreamTag() string {
+	return c.respUpstreamTag
+}
+
+func (c *DNSContext) SetRespUpstreamTag(tag string) {
+	c.respUpstreamTag = tag
 }
 
 func (c *DNSContext) Mark() uint64 {

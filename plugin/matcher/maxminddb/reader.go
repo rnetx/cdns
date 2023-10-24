@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/netip"
 	"strings"
+	"sync/atomic"
 
 	"github.com/oschwald/maxminddb-golang"
 )
@@ -17,6 +18,7 @@ const (
 type Reader struct {
 	dataType string
 	reader   *maxminddb.Reader
+	n        *atomic.Int64
 }
 
 func OpenMaxmindDBReader(path string, dataType string) (*Reader, error) {
@@ -41,7 +43,9 @@ func OpenMaxmindDBReader(path string, dataType string) (*Reader, error) {
 	reader := &Reader{
 		dataType: dataType,
 		reader:   db,
+		n:        &atomic.Int64{},
 	}
+	reader.n.Add(1)
 	return reader, nil
 }
 
@@ -74,6 +78,11 @@ type Country struct {
 		IsAnonymousProxy    bool `maxminddb:"is_anonymous_proxy"`
 		IsSatelliteProvider bool `maxminddb:"is_satellite_provider"`
 	} `maxminddb:"traits"`
+}
+
+func (r *Reader) Clone() *Reader {
+	r.n.Add(1)
+	return r
 }
 
 func (r *Reader) Lookup(addr netip.Addr) []string {
@@ -113,5 +122,8 @@ func (r *Reader) Lookup(addr netip.Addr) []string {
 }
 
 func (r *Reader) Close() error {
-	return r.reader.Close()
+	if r.n.Add(-1) == 0 {
+		return r.reader.Close()
+	}
+	return nil
 }

@@ -36,7 +36,7 @@ type SingGeoSite struct {
 	ctx            context.Context
 	tag            string
 	logger         log.Logger
-	runningArgsMap map[uint64][]string
+	runningArgsMap map[uint16][]string
 
 	path string
 	code []string
@@ -113,11 +113,11 @@ func (s *SingGeoSite) loadRule() error {
 	return nil
 }
 
-func (s *SingGeoSite) LoadRunningArgs(_ context.Context, argsID uint64, args any) error {
+func (s *SingGeoSite) LoadRunningArgs(_ context.Context, args any) (uint16, error) {
 	var codes utils.Listable[string]
 	err := utils.JsonDecode(args, &codes)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	seen := make(map[string]struct{}, len(codes))
 	formatCodes := make([]string, 0, len(codes))
@@ -132,13 +132,20 @@ func (s *SingGeoSite) LoadRunningArgs(_ context.Context, argsID uint64, args any
 		}
 	}
 	if s.runningArgsMap == nil {
-		s.runningArgsMap = make(map[uint64][]string)
+		s.runningArgsMap = make(map[uint16][]string)
 	}
-	s.runningArgsMap[argsID] = formatCodes
-	return nil
+	var id uint16
+	for {
+		id = utils.RandomIDUint16()
+		if _, ok := s.runningArgsMap[id]; !ok {
+			break
+		}
+	}
+	s.runningArgsMap[id] = formatCodes
+	return id, nil
 }
 
-func (s *SingGeoSite) Match(ctx context.Context, dnsCtx *adapter.DNSContext, argsID uint64) (bool, error) {
+func (s *SingGeoSite) Match(ctx context.Context, dnsCtx *adapter.DNSContext, argsID uint16) (bool, error) {
 	reqMsg := dnsCtx.ReqMsg()
 	question := reqMsg.Question
 	if len(question) == 0 {

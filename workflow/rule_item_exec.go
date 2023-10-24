@@ -134,12 +134,11 @@ func (r *RuleItemExec) check(ctx context.Context, core adapter.Core) error {
 		if p == nil {
 			return fmt.Errorf("plugin executor [%s] not found", r.plugin.tag)
 		}
-		id := utils.RandomIDUint64()
-		r.plugin.argsID = id
-		err := p.LoadRunningArgs(ctx, r.plugin.argsID, r.plugin.args)
+		id, err := p.LoadRunningArgs(ctx, r.plugin.args)
 		if err != nil {
 			return fmt.Errorf("plugin executor [%s] load running args failed: %v", r.plugin.tag, err)
 		}
+		r.plugin.argsID = id
 		r.plugin.executor = p
 		r.plugin.tag = ""   // clean
 		r.plugin.args = nil // clean
@@ -211,7 +210,7 @@ func (r *RuleItemExec) exec(ctx context.Context, _ adapter.Core, logger log.Logg
 	if r.upstream != nil {
 		reqMsg := dnsCtx.ReqMsg()
 		if reqMsg == nil {
-			logger.DebugfContext(ctx, "upstream: req msg is nil")
+			logger.DebugfContext(ctx, "upstream: request message is nil")
 			return adapter.ReturnModeContinue, nil
 		}
 		exchangeHooks := dnsCtx.ExchangeHooks()
@@ -234,6 +233,7 @@ func (r *RuleItemExec) exec(ctx context.Context, _ adapter.Core, logger log.Logg
 			return adapter.ReturnModeUnknown, err
 		}
 		dnsCtx.SetRespMsg(respMsg)
+		dnsCtx.SetRespUpstreamTag(r.upstream.Tag())
 		extraExchanges := dnsCtx.ExtraExchanges()
 		if len(extraExchanges) > 0 {
 			ch := utils.NewSafeChan[exchangeResult](len(extraExchanges))
@@ -312,7 +312,7 @@ func (r *RuleItemExec) exec(ctx context.Context, _ adapter.Core, logger log.Logg
 	if r.setTTL != nil {
 		respMsg := dnsCtx.RespMsg()
 		if respMsg == nil {
-			logger.DebugfContext(ctx, "set ttl: resp msg is nil")
+			logger.DebugfContext(ctx, "set ttl: response message is nil")
 			return adapter.ReturnModeContinue, nil
 		}
 		for i := range respMsg.Answer {
@@ -323,7 +323,7 @@ func (r *RuleItemExec) exec(ctx context.Context, _ adapter.Core, logger log.Logg
 	}
 	if r.clean {
 		dnsCtx.SetRespMsg(nil)
-		logger.DebugContext(ctx, "clean resp msg")
+		logger.DebugContext(ctx, "clean response message")
 		return adapter.ReturnModeContinue, nil
 	}
 	if r._return != "" {

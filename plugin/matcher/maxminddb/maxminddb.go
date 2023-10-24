@@ -27,11 +27,18 @@ type Args struct {
 	Type string `json:"type"`
 }
 
+var (
+	_ adapter.PluginMatcher = (*MaxmindDB)(nil)
+	_ adapter.Starter       = (*MaxmindDB)(nil)
+	_ adapter.Closer        = (*MaxmindDB)(nil)
+	_ adapter.APIHandler    = (*MaxmindDB)(nil)
+)
+
 type MaxmindDB struct {
 	ctx            context.Context
 	tag            string
 	logger         log.Logger
-	runningArgsMap map[uint64]map[string]struct{}
+	runningArgsMap map[uint16]map[string]struct{}
 
 	path     string
 	dataType string
@@ -85,15 +92,19 @@ func (m *MaxmindDB) loadRule() error {
 		return err
 	}
 	m.logger.Debugf("load maxminddb success: %d", len(reader.reader.Metadata.Languages))
+	oldReader := m.reader
 	m.reader = reader
+	if oldReader != nil {
+		oldReader.Close()
+	}
 	return nil
 }
 
-func (m *MaxmindDB) LoadRunningArgs(_ context.Context, argsID uint64, args any) error {
+func (m *MaxmindDB) LoadRunningArgs(_ context.Context, args any) (uint16, error) {
 	var codes utils.Listable[string]
 	err := utils.JsonDecode(args, &codes)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	codeMap := make(map[string]struct{})
 	for _, code := range codes {
@@ -104,13 +115,20 @@ func (m *MaxmindDB) LoadRunningArgs(_ context.Context, argsID uint64, args any) 
 		}
 	}
 	if m.runningArgsMap == nil {
-		m.runningArgsMap = make(map[uint64]map[string]struct{})
+		m.runningArgsMap = make(map[uint16]map[string]struct{})
 	}
-	m.runningArgsMap[argsID] = codeMap
-	return nil
+	var id uint16
+	for {
+		id = utils.RandomIDUint16()
+		if _, ok := m.runningArgsMap[id]; !ok {
+			break
+		}
+	}
+	m.runningArgsMap[id] = codeMap
+	return id, nil
 }
 
-func (m *MaxmindDB) Match(ctx context.Context, dnsCtx *adapter.DNSContext, argsID uint64) (bool, error) {
+func (m *MaxmindDB) Match(ctx context.Context, dnsCtx *adapter.DNSContext, argsID uint16) (bool, error) {
 	respMsg := dnsCtx.RespMsg()
 	if respMsg == nil {
 		m.logger.DebugfContext(ctx, "resp msg is nil")
@@ -135,9 +153,14 @@ func (m *MaxmindDB) Match(ctx context.Context, dnsCtx *adapter.DNSContext, argsI
 		m.logger.DebugfContext(ctx, "no ips found")
 		return false, nil
 	}
+	reader := m.reader
+	if reader != nil {
+		reader = reader.Clone()
+	}
+	defer reader.Close()
 	codeMap := m.runningArgsMap[argsID]
 	for _, ip := range ips {
-		codes := m.reader.Lookup(ip)
+		codes := reader.Lookup(ip)
 		if len(codes) > 0 {
 			for _, code := range codes {
 				_, ok := codeMap[code]

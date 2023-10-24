@@ -200,12 +200,11 @@ func (r *RuleItemMatch) check(ctx context.Context, core adapter.Core) error {
 		if p == nil {
 			return fmt.Errorf("plugin matcher [%s] not found", r.plugin.tag)
 		}
-		id := utils.RandomIDUint64()
-		r.plugin.argsID = id
-		err := p.LoadRunningArgs(ctx, r.plugin.argsID, r.plugin.args)
+		id, err := p.LoadRunningArgs(ctx, r.plugin.args)
 		if err != nil {
 			return fmt.Errorf("plugin matcher [%s] load running args failed: %v", r.plugin.tag, err)
 		}
+		r.plugin.argsID = id
 		r.plugin.matcher = p
 		r.plugin.tag = ""   // clean
 		r.plugin.args = nil // clean
@@ -255,7 +254,7 @@ func (r *RuleItemMatch) match0(ctx context.Context, core adapter.Core, logger lo
 	if len(r.qType) > 0 {
 		question := dnsCtx.ReqMsg().Question
 		if len(question) == 0 {
-			logger.DebugfContext(ctx, "no match qtype: no question found")
+			logger.DebugfContext(ctx, "no match qtype: no request question found")
 			return false, nil
 		}
 		qType := question[0].Qtype
@@ -271,7 +270,7 @@ func (r *RuleItemMatch) match0(ctx context.Context, core adapter.Core, logger lo
 	if len(r.qName) > 0 {
 		question := dnsCtx.ReqMsg().Question
 		if len(question) == 0 {
-			logger.DebugfContext(ctx, "no match qname: no question found")
+			logger.DebugfContext(ctx, "no match qname: no request question found")
 			return false, nil
 		}
 		qName := question[0].Name
