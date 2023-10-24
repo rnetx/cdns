@@ -9,6 +9,7 @@ import (
 
 	"github.com/logrusorgru/aurora/v4"
 	"github.com/rnetx/cdns/adapter"
+	"github.com/rnetx/cdns/api"
 	"github.com/rnetx/cdns/listener"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/plugin"
@@ -31,6 +32,8 @@ type Core struct {
 	rootLogger  log.Logger
 	coreLogger  log.Logger
 	closeOutput io.Closer
+	//
+	apiServer *api.APIServer
 	//
 	listeners         []adapter.Listener
 	listenerMap       map[string]adapter.Listener
@@ -196,6 +199,13 @@ func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, er
 			c.pluginExecutorMap[tag] = pe
 		}
 	}
+	if options.API != nil {
+		apiServerLogger := log.NewTagLogger(c.rootLogger, "api-server", aurora.RedFg)
+		c.apiServer, err = api.NewAPIServer(c.ctx, c, apiServerLogger, *options.API)
+		if err != nil {
+			return nil, nil, fmt.Errorf("create api server failed: %s", err)
+		}
+	}
 	return c, c.coreLogger, nil
 }
 
@@ -335,6 +345,22 @@ func (c *Core) Run() error {
 			}
 		}
 		listenerStack.Push(l)
+	}
+	if c.apiServer != nil {
+		defer func() {
+			err := c.apiServer.Close()
+			if err != nil {
+				c.coreLogger.Errorf("close api server failed: %s", err)
+			} else {
+				c.coreLogger.Infof("close api server success")
+			}
+		}()
+		err = c.apiServer.Start()
+		if err != nil {
+			err = fmt.Errorf("start api server failed: %s", err)
+			c.rootLogger.Fatal(err)
+			return err
+		}
 	}
 	duration := time.Since(t)
 	c.coreLogger.Infof("core is started, cost: %dms", duration.Milliseconds())

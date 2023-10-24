@@ -3,6 +3,7 @@ package upstream
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"github.com/miekg/dns"
 	"github.com/rnetx/cdns/adapter"
@@ -28,6 +29,9 @@ type ParallelUpstream struct {
 
 	upstreamTags []string
 	upstreams    []adapter.Upstream
+
+	reqTotal   atomic.Uint64
+	reqSuccess atomic.Uint64
 }
 
 func NewParallelUpstream(_ context.Context, core adapter.Core, logger log.Logger, tag string, options ParallelUpstreamOptions) (adapter.Upstream, error) {
@@ -67,7 +71,7 @@ func (u *ParallelUpstream) Start() error {
 	return nil
 }
 
-func (u *ParallelUpstream) Exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
+func (u *ParallelUpstream) exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	ch := utils.NewSafeChan[utils.Result[*dns.Msg]](len(u.upstreams))
@@ -103,4 +107,22 @@ func (u *ParallelUpstream) Exchange(ctx context.Context, req *dns.Msg) (*dns.Msg
 		}
 	}
 	return nil, lastErr
+}
+
+func (u *ParallelUpstream) Exchange(ctx context.Context, req *dns.Msg) (resp *dns.Msg, err error) {
+	resp, err = u.exchange(ctx, req)
+	u.reqTotal.Add(1)
+	if err == nil {
+		u.reqSuccess.Add(1)
+	}
+	return
+}
+
+func (u *ParallelUpstream) StatisticalData() map[string]any {
+	total := u.reqTotal.Load()
+	success := u.reqSuccess.Load()
+	return map[string]any{
+		"total":   total,
+		"success": success,
+	}
 }

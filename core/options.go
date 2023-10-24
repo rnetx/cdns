@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/rnetx/cdns/api"
 	"github.com/rnetx/cdns/listener"
 	"github.com/rnetx/cdns/plugin"
 	"github.com/rnetx/cdns/upstream"
@@ -9,6 +10,7 @@ import (
 
 type Options struct {
 	Log             LogOptions                     `yaml:"log,omitempty"`
+	API             *api.Options                   `yaml:"api,omitempty"`
 	Upstreams       []upstream.Options             `yaml:"upstreams,omitempty"`
 	Workflows       []workflow.WorkflowOptions     `yaml:"workflows,omitempty"`
 	Listeners       []listener.Options             `yaml:"listeners,omitempty"`

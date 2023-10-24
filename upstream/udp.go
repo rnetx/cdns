@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"github.com/miekg/dns"
@@ -56,6 +57,9 @@ type UDPUpstream struct {
 	udpConnPool     *pool.Pool[*dns.Conn]
 	tcpPipelinePool *pipeline.DNSPipelineConnPool
 	tcpConnPool     *pool.Pool[*dns.Conn]
+
+	reqTotal   atomic.Uint64
+	reqSuccess atomic.Uint64
 }
 
 func NewUDPUpstream(ctx context.Context, core adapter.Core, logger log.Logger, tag string, options UDPUpstreamOptions) (adapter.Upstream, error) {
@@ -274,5 +278,19 @@ func (u *UDPUpstream) exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, err
 }
 
 func (u *UDPUpstream) Exchange(ctx context.Context, req *dns.Msg) (resp *dns.Msg, err error) {
-	return Exchange(ctx, req, u.logger, u.exchange)
+	resp, err = Exchange(ctx, req, u.logger, u.exchange)
+	u.reqTotal.Add(1)
+	if err == nil {
+		u.reqSuccess.Add(1)
+	}
+	return
+}
+
+func (u *UDPUpstream) StatisticalData() map[string]any {
+	total := u.reqTotal.Load()
+	success := u.reqSuccess.Load()
+	return map[string]any{
+		"total":   total,
+		"success": success,
+	}
 }

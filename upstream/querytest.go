@@ -3,6 +3,7 @@ package upstream
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/miekg/dns"
@@ -50,6 +51,9 @@ type QueryTestUpstream struct {
 	loopCtx    context.Context
 	loopCancel context.CancelFunc
 	closeDone  chan struct{}
+
+	reqTotal   atomic.Uint64
+	reqSuccess atomic.Uint64
 }
 
 func NewQueryTestUpstream(ctx context.Context, core adapter.Core, logger log.Logger, tag string, options QueryTestUpstreamOptions) (adapter.Upstream, error) {
@@ -200,8 +204,26 @@ func (u *QueryTestUpstream) test(ctx context.Context) {
 	u.selectedTest = selectedTest
 }
 
-func (u *QueryTestUpstream) Exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
+func (u *QueryTestUpstream) exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
 	selected := u.selected
 	u.logger.DebugfContext(ctx, "selected upstream: %s", selected.Tag())
 	return selected.Exchange(ctx, req)
+}
+
+func (u *QueryTestUpstream) Exchange(ctx context.Context, req *dns.Msg) (resp *dns.Msg, err error) {
+	resp, err = u.exchange(ctx, req)
+	u.reqTotal.Add(1)
+	if err == nil {
+		u.reqSuccess.Add(1)
+	}
+	return
+}
+
+func (u *QueryTestUpstream) StatisticalData() map[string]any {
+	total := u.reqTotal.Load()
+	success := u.reqSuccess.Load()
+	return map[string]any{
+		"total":   total,
+		"success": success,
+	}
 }

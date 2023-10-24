@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/miekg/dns"
@@ -73,6 +74,9 @@ type HTTPSUpstream struct {
 	httpClient     *http.Client
 	httpTransport  *http.Transport
 	http3Transport *http3.RoundTripper
+
+	reqTotal   atomic.Uint64
+	reqSuccess atomic.Uint64
 }
 
 func NewHTTPSUpstream(ctx context.Context, core adapter.Core, logger log.Logger, tag string, options HTTPSUpstreamOptions) (adapter.Upstream, error) {
@@ -391,10 +395,21 @@ func (u *HTTPSUpstream) Exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, e
 	*newReq = *req
 	newReq.Id = 0
 	resp, err := Exchange(ctx, newReq, u.logger, u.exchange)
+	u.reqTotal.Add(1)
 	if err == nil {
 		resp.Id = req.Id
+		u.reqSuccess.Add(1)
 	}
 	return resp, err
+}
+
+func (u *HTTPSUpstream) StatisticalData() map[string]any {
+	total := u.reqTotal.Load()
+	success := u.reqSuccess.Load()
+	return map[string]any{
+		"total":   total,
+		"success": success,
+	}
 }
 
 type HTTPTCPConn struct {

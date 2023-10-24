@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"sync/atomic"
 	"time"
 
 	"github.com/miekg/dns"
@@ -29,6 +30,9 @@ type RandomUpstream struct {
 
 	upstreamTags []string
 	upstreams    []adapter.Upstream
+
+	reqTotal   atomic.Uint64
+	reqSuccess atomic.Uint64
 }
 
 func NewRandomUpstream(_ context.Context, core adapter.Core, logger log.Logger, tag string, options RandomUpstreamOptions) (adapter.Upstream, error) {
@@ -68,10 +72,28 @@ func (u *RandomUpstream) Start() error {
 	return nil
 }
 
-func (u *RandomUpstream) Exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
+func (u *RandomUpstream) exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	index := r.Intn(len(u.upstreams))
 	uu := u.upstreams[index]
 	u.logger.DebugfContext(ctx, "random upstream [%s] selected", uu.Tag())
 	return uu.Exchange(ctx, req)
+}
+
+func (u *RandomUpstream) Exchange(ctx context.Context, req *dns.Msg) (resp *dns.Msg, err error) {
+	resp, err = u.exchange(ctx, req)
+	u.reqTotal.Add(1)
+	if err == nil {
+		u.reqSuccess.Add(1)
+	}
+	return
+}
+
+func (u *RandomUpstream) StatisticalData() map[string]any {
+	total := u.reqTotal.Load()
+	success := u.reqSuccess.Load()
+	return map[string]any{
+		"total":   total,
+		"success": success,
+	}
 }

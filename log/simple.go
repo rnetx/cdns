@@ -87,6 +87,14 @@ func (l *SimpleLogger) printContext(ctx context.Context, level Level, msg string
 			m += fmt.Sprintf("[%d %dms] ", dnsContext.ID(), dnsContext.Duration().Milliseconds())
 		}
 	}
+	apiLogCtx := adapter.LoadAPIContext(ctx)
+	if apiLogCtx != nil {
+		if !l._disableColor {
+			m += fmt.Sprintf("[%s] ", aurora.Colorize(fmt.Sprintf("%d %dms", apiLogCtx.ID(), apiLogCtx.Duration().Milliseconds()), apiLogCtx.Color()))
+		} else {
+			m += fmt.Sprintf("[%d %dms] ", apiLogCtx.ID(), apiLogCtx.Duration().Milliseconds())
+		}
+	}
 	m += msg
 	fmt.Fprintln(l.writer, m)
 }

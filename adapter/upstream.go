@@ -11,4 +11,5 @@ type Upstream interface {
 	Type() string
 	Dependencies() []string
 	Exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, error)
+	StatisticalData() map[string]any
 }

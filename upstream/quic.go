@@ -61,6 +61,9 @@ type QUICUpstream struct {
 	isClosed           bool
 	quicConnectionLock sync.Mutex
 	quicConnection     *quicConnection
+
+	reqTotal   atomic.Uint64
+	reqSuccess atomic.Uint64
 }
 
 func NewQUICUpstream(ctx context.Context, core adapter.Core, logger log.Logger, tag string, options QUICUpstreamOptions) (adapter.Upstream, error) {
@@ -295,10 +298,21 @@ func (u *QUICUpstream) Exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, er
 	*newReq = *req
 	newReq.Id = 0
 	resp, err := Exchange(ctx, newReq, u.logger, u.exchange)
+	u.reqTotal.Add(1)
 	if err == nil {
 		resp.Id = req.Id
+		u.reqSuccess.Add(1)
 	}
 	return resp, err
+}
+
+func (u *QUICUpstream) StatisticalData() map[string]any {
+	total := u.reqTotal.Load()
+	success := u.reqSuccess.Load()
+	return map[string]any{
+		"total":   total,
+		"success": success,
+	}
 }
 
 type quicConnection struct {
