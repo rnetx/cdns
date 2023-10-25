@@ -58,7 +58,7 @@ func NewSingGeoSite(ctx context.Context, _ adapter.Core, logger log.Logger, tag 
 		return nil, fmt.Errorf("parse args failed: %w", err)
 	}
 	if a.Path == "" {
-		return nil, fmt.Errorf("mssing path")
+		return nil, fmt.Errorf("missing path")
 	}
 	s.path = a.Path
 	s.code = a.Code

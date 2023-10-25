@@ -5,32 +5,14 @@ import (
 	"encoding/json"
 	"sync"
 	"time"
+
+	"github.com/rnetx/cdns/utils"
 )
 
-type Duration time.Duration
-
-func (d Duration) MarshalJSON() ([]byte, error) {
-	return json.Marshal(time.Duration(d).String())
-}
-
-func (d *Duration) UnmarshalJSON(data []byte) error {
-	var s string
-	err := json.Unmarshal(data, &s)
-	if err != nil {
-		return err
-	}
-	t, err := time.ParseDuration(s)
-	if err != nil {
-		return err
-	}
-	*d = Duration(t)
-	return nil
-}
-
 type Item[T any] struct {
-	Value    T         `json:"value"`
-	TTL      Duration  `json:"ttl"`
-	Deadline time.Time `json:"-"`
+	Value    T              `json:"value"`
+	TTL      utils.Duration `json:"ttl"`
+	Deadline time.Time      `json:"-"`
 }
 
 type CacheMap[T any] struct {
@@ -106,7 +88,7 @@ func (m *CacheMap[T]) Set(key string, value T, ttl time.Duration) {
 	defer m.lock.Unlock()
 	m.m[key] = &Item[T]{
 		Value:    value,
-		TTL:      Duration(ttl),
+		TTL:      utils.Duration(ttl),
 		Deadline: time.Now().Add(ttl),
 	}
 }

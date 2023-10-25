@@ -60,7 +60,7 @@ func NewMaxmindDB(ctx context.Context, _ adapter.Core, logger log.Logger, tag st
 		return nil, fmt.Errorf("parse args failed: %w", err)
 	}
 	if a.Path == "" {
-		return nil, fmt.Errorf("mssing path")
+		return nil, fmt.Errorf("missing path")
 	}
 	m.path = a.Path
 	m.dataType = a.Type

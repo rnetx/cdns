@@ -27,10 +27,10 @@ func init() {
 }
 
 type Args struct {
-	DumpPath     string   `json:"dump-path"`
-	DumpInterval Duration `json:"dump-interval"`
-	UseExpired   bool     `json:"use-expired"`
-	FlushExpired bool     `json:"flush-expired"`
+	DumpPath     string         `json:"dump-path"`
+	DumpInterval utils.Duration `json:"dump-interval"`
+	UseExpired   bool           `json:"use-expired"`
+	FlushExpired bool           `json:"flush-expired"`
 }
 
 type runningArgs struct {
