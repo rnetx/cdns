@@ -68,19 +68,15 @@ func (m *CacheMap[T]) loopHandle() {
 	}
 }
 
-func (m *CacheMap[T]) Get(key string) (T, bool, bool) {
+func (m *CacheMap[T]) Get(key string) (T, bool) {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
-	var (
-		v         T
-		isExpired bool
-	)
+	var v T
 	item, ok := m.m[key]
 	if ok {
 		v = item.Value
-		isExpired = time.Now().After(item.Deadline)
 	}
-	return v, isExpired, ok
+	return v, ok
 }
 
 func (m *CacheMap[T]) Set(key string, value T, ttl time.Duration) {

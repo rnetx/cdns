@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -29,8 +28,6 @@ func init() {
 type Args struct {
 	DumpPath     string         `json:"dump-path"`
 	DumpInterval utils.Duration `json:"dump-interval"`
-	UseExpired   bool           `json:"use-expired"`
-	FlushExpired bool           `json:"flush-expired"`
 }
 
 type runningArgs struct {
@@ -47,27 +44,23 @@ var (
 
 type MemCache struct {
 	ctx            context.Context
-	core           adapter.Core
 	tag            string
 	logger         log.Logger
 	runningArgsMap map[uint16]runningArgs
 
 	dumpPath     string
 	dumpInterval time.Duration
-	useExpired   bool
-	flushExpired bool
 
 	dumpLock       sync.Mutex
-	cacheMap       *CacheMap[cacheItem]
+	cacheMap       *CacheMap[*cacheItem]
 	loopDumpCtx    context.Context
 	loopDumpCancel context.CancelFunc
 	closeDone      chan struct{}
 }
 
-func NewMemCache(ctx context.Context, core adapter.Core, logger log.Logger, tag string, args any) (adapter.PluginExecutor, error) {
+func NewMemCache(ctx context.Context, _ adapter.Core, logger log.Logger, tag string, args any) (adapter.PluginExecutor, error) {
 	m := &MemCache{
 		ctx:    ctx,
-		core:   core,
 		tag:    tag,
 		logger: logger,
 	}
@@ -78,8 +71,6 @@ func NewMemCache(ctx context.Context, core adapter.Core, logger log.Logger, tag 
 	}
 	m.dumpPath = a.DumpPath
 	m.dumpInterval = time.Duration(a.DumpInterval)
-	m.useExpired = a.UseExpired
-	m.flushExpired = a.FlushExpired
 	return m, nil
 }
 
@@ -97,13 +88,13 @@ func (m *MemCache) Start() error {
 		if err != nil {
 			return fmt.Errorf("load dump file failed: %s, error: %s", m.dumpPath, err)
 		}
-		cacheMap, err := Decode[cacheItem](m.ctx, raw)
+		cacheMap, err := Decode[*cacheItem](m.ctx, raw)
 		if err != nil {
 			return fmt.Errorf("load dump file failed: %s, error: %s", m.dumpPath, err)
 		}
 		m.cacheMap = cacheMap
 	} else {
-		m.cacheMap = NewCacheMap[cacheItem](m.ctx)
+		m.cacheMap = NewCacheMap[*cacheItem](m.ctx)
 	}
 	m.cacheMap.Start()
 	if m.dumpPath != "" && m.dumpInterval > 0 {
@@ -209,7 +200,6 @@ func (m *MemCache) Exec(ctx context.Context, dnsCtx *adapter.DNSContext, argsID 
 	case "store":
 		reqMsg := dnsCtx.ReqMsg()
 		respMsg := dnsCtx.RespMsg()
-		respUpstreamTag := dnsCtx.RespUpstreamTag()
 		if reqMsg == nil || respMsg == nil {
 			if reqMsg == nil {
 				m.logger.DebugContext(ctx, "request message is nil")
@@ -234,8 +224,8 @@ func (m *MemCache) Exec(ctx context.Context, dnsCtx *adapter.DNSContext, argsID 
 		}
 		cacheMap := m.cacheMap
 		if cacheMap != nil {
-			cacheMap.Set(key, cacheItem{Upstream: respUpstreamTag, Resp: respMsg.Copy()}, time.Duration(ttl)*time.Second)
-			m.logger.Debugf("store key: %s, upstream: %s, ttl: %d", key, respUpstreamTag, ttl)
+			cacheMap.Set(key, (*cacheItem)(respMsg.Copy()), time.Duration(ttl)*time.Second)
+			m.logger.DebugfContext(ctx, "store key: %s, ttl: %d", key, ttl)
 		}
 		ok = true
 	case "restore":
@@ -251,22 +241,12 @@ func (m *MemCache) Exec(ctx context.Context, dnsCtx *adapter.DNSContext, argsID 
 		}
 		cacheMap := m.cacheMap
 		if cacheMap != nil {
-			cacheItem, isExpired, found := cacheMap.Get(key)
+			cacheItem, found := cacheMap.Get(key)
 			if found {
-				if isExpired {
-					m.logger.DebugfContext(ctx, "key: %s is expired", key)
-				}
-				if !isExpired || m.useExpired {
-					m.logger.DebugfContext(ctx, "restore key: %s, upstream: %s", key, cacheItem.Upstream)
-					respMsg := cacheItem.Resp.Copy()
-					respMsg.SetReply(reqMsg)
-					dnsCtx.SetRespMsg(respMsg)
-					dnsCtx.SetRespUpstreamTag(cacheItem.Upstream)
-				}
-				if isExpired && m.flushExpired {
-					m.logger.DebugfContext(ctx, "flush key: %s", key)
-					go m.flushCache(key, cacheItem.Upstream)
-				}
+				m.logger.DebugfContext(ctx, "restore key: %s", key)
+				respMsg := (*dns.Msg)(cacheItem).Copy()
+				respMsg.SetReply(reqMsg)
+				dnsCtx.SetRespMsg(respMsg)
 				ok = true
 			}
 		}
@@ -334,41 +314,7 @@ func (m *MemCache) APIHandler() chi.Router {
 	return builder.Build()
 }
 
-func (m *MemCache) flushCache(key string, upstreamTag string) {
-	if upstreamTag == "" {
-		m.logger.Error("invalid upstream tag")
-		return
-	}
-	u := m.core.GetUpstream(upstreamTag)
-	if u == nil {
-		m.logger.Errorf("upstream [%s] not found", upstreamTag)
-		return
-	}
-	req, err := keyToReq(key)
-	if err != nil {
-		m.logger.Error(err)
-		return
-	}
-	resp, err := u.Exchange(m.ctx, req)
-	if err != nil {
-		m.logger.Errorf("exchange failed: %s, key: %s", err, key)
-		return
-	}
-	ttl := respFindMinTTL(resp)
-	if ttl == 0 {
-		m.logger.Errorf("invalid ttl, key: %s", key)
-		return
-	}
-	cacheMap := m.cacheMap
-	if cacheMap == nil {
-		m.logger.Error("cache map is nil")
-		return
-	}
-	cacheMap.Set(key, cacheItem{Upstream: upstreamTag, Resp: resp}, time.Duration(ttl)*time.Second)
-	m.logger.Debugf("flush key: %s, upstream: %s, ttl: %d", key, upstreamTag, ttl)
-}
-
-func dump(cacheMap *CacheMap[cacheItem], path string) error {
+func dump(cacheMap *CacheMap[*cacheItem], path string) error {
 	if cacheMap == nil {
 		return nil
 	}
@@ -386,28 +332,6 @@ func reqToKey(req *dns.Msg) string {
 		key = fmt.Sprintf("%s,%s,%s", question[0].Name, dns.TypeToString[question[0].Qtype], dns.ClassToString[question[0].Qclass])
 	}
 	return key
-}
-
-func keyToReq(key string) (*dns.Msg, error) {
-	keys := strings.SplitN(key, ",", 3)
-	if len(keys) != 3 {
-		return nil, fmt.Errorf("invalid key: %s", key)
-	}
-	name := keys[0]
-	qTypeStr := keys[1]
-	qClassStr := keys[2]
-	qType, ok := dns.StringToType[qTypeStr]
-	if !ok {
-		return nil, fmt.Errorf("invalid key: %s", key)
-	}
-	qClass, ok := dns.StringToClass[qClassStr]
-	if !ok {
-		return nil, fmt.Errorf("invalid key: %s", key)
-	}
-	req := &dns.Msg{}
-	req.SetQuestion(name, qType)
-	req.Question[0].Qclass = qClass
-	return req, nil
 }
 
 func respFindMinTTL(resp *dns.Msg) uint32 {
@@ -433,42 +357,30 @@ func respFindMinTTL(resp *dns.Msg) uint32 {
 	return minTTL
 }
 
-type cacheItem struct {
-	Upstream string
-	Resp     *dns.Msg
-}
-
-type _cacheItem struct {
-	Upstream string `json:"upstream"`
-	Resp     string `json:"resp"`
-}
+type cacheItem dns.Msg
 
 func (c *cacheItem) UnmarshalJSON(data []byte) error {
-	var _c _cacheItem
+	var _c string
 	err := json.Unmarshal(data, &_c)
 	if err != nil {
 		return err
 	}
-	respRaw, err := base64.StdEncoding.DecodeString(_c.Resp)
+	respRaw, err := base64.StdEncoding.DecodeString(_c)
 	if err != nil {
 		return err
 	}
-	c.Resp = &dns.Msg{}
-	err = c.Resp.Unpack(respRaw)
+	err = (*dns.Msg)(c).Unpack(respRaw)
 	if err != nil {
 		return err
 	}
-	c.Upstream = _c.Upstream
 	return nil
 }
 
-func (c cacheItem) MarshalJSON() ([]byte, error) {
-	var _c _cacheItem
-	_c.Upstream = c.Upstream
-	respRaw, err := c.Resp.Pack()
+func (c *cacheItem) MarshalJSON() ([]byte, error) {
+	respRaw, err := (*dns.Msg)(c).Pack()
 	if err != nil {
 		return nil, err
 	}
-	_c.Resp = base64.StdEncoding.EncodeToString(respRaw)
-	return json.Marshal(_c)
+	s := base64.StdEncoding.EncodeToString(respRaw)
+	return json.Marshal(s)
 }
