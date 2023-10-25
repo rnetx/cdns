@@ -38,46 +38,6 @@ type runningArgs struct {
 	Return any    `json:"return"`
 }
 
-type cacheItem struct {
-	Upstream string
-	Resp     *dns.Msg
-}
-
-type _cacheItem struct {
-	Upstream string `json:"upstream"`
-	Resp     string `json:"resp"`
-}
-
-func (c *cacheItem) UnmarshalJSON(data []byte) error {
-	var _c _cacheItem
-	err := json.Unmarshal(data, &_c)
-	if err != nil {
-		return err
-	}
-	respRaw, err := base64.StdEncoding.DecodeString(_c.Resp)
-	if err != nil {
-		return err
-	}
-	c.Resp = &dns.Msg{}
-	err = c.Resp.Unpack(respRaw)
-	if err != nil {
-		return err
-	}
-	c.Upstream = _c.Upstream
-	return nil
-}
-
-func (c cacheItem) MarshalJSON() ([]byte, error) {
-	var _c _cacheItem
-	_c.Upstream = c.Upstream
-	respRaw, err := c.Resp.Pack()
-	if err != nil {
-		return nil, err
-	}
-	_c.Resp = base64.StdEncoding.EncodeToString(respRaw)
-	return json.Marshal(_c)
-}
-
 var (
 	_ adapter.PluginExecutor = (*MemCache)(nil)
 	_ adapter.Starter        = (*MemCache)(nil)
@@ -471,4 +431,44 @@ func respFindMinTTL(resp *dns.Msg) uint32 {
 		}
 	}
 	return minTTL
+}
+
+type cacheItem struct {
+	Upstream string
+	Resp     *dns.Msg
+}
+
+type _cacheItem struct {
+	Upstream string `json:"upstream"`
+	Resp     string `json:"resp"`
+}
+
+func (c *cacheItem) UnmarshalJSON(data []byte) error {
+	var _c _cacheItem
+	err := json.Unmarshal(data, &_c)
+	if err != nil {
+		return err
+	}
+	respRaw, err := base64.StdEncoding.DecodeString(_c.Resp)
+	if err != nil {
+		return err
+	}
+	c.Resp = &dns.Msg{}
+	err = c.Resp.Unpack(respRaw)
+	if err != nil {
+		return err
+	}
+	c.Upstream = _c.Upstream
+	return nil
+}
+
+func (c cacheItem) MarshalJSON() ([]byte, error) {
+	var _c _cacheItem
+	_c.Upstream = c.Upstream
+	respRaw, err := c.Resp.Pack()
+	if err != nil {
+		return nil, err
+	}
+	_c.Resp = base64.StdEncoding.EncodeToString(respRaw)
+	return json.Marshal(_c)
 }
