@@ -6,7 +6,6 @@ import (
 
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
-	"github.com/rnetx/cdns/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -19,9 +18,9 @@ type RuleMatchOr struct {
 }
 
 type _RuleMatchOr struct {
-	MatchOrs  utils.Listable[yaml.Node] `yaml:"match-or,omitempty"`
-	ElseExecs utils.Listable[yaml.Node] `yaml:"else-exec,omitempty"`
-	Execs     utils.Listable[yaml.Node] `yaml:"exec,omitempty"`
+	MatchOrs  []yaml.Node `yaml:"match-or,omitempty"`
+	ElseExecs []yaml.Node `yaml:"else-exec,omitempty"`
+	Execs     []yaml.Node `yaml:"exec,omitempty"`
 }
 
 func (o *RuleMatchOr) UnmarshalYAML(unmarshal func(any) error) error {
@@ -38,6 +37,9 @@ func (o *RuleMatchOr) UnmarshalYAML(unmarshal func(any) error) error {
 	}
 	matchOrs := make([]*RuleItemMatch, 0, len(_o.MatchOrs))
 	for i, node := range _o.MatchOrs {
+		if node.IsZero() {
+			return fmt.Errorf("invalid match-or[%d]: empty", i)
+		}
 		var m RuleItemMatch
 		err := node.Decode(&m)
 		if err != nil {
@@ -49,6 +51,9 @@ func (o *RuleMatchOr) UnmarshalYAML(unmarshal func(any) error) error {
 	if len(_o.ElseExecs) > 0 {
 		elseExecs := make([]*RuleItemExec, 0, len(_o.ElseExecs))
 		for i, node := range _o.ElseExecs {
+			if node.IsZero() {
+				return fmt.Errorf("invalid else-exec[%d]: empty", i)
+			}
 			var e RuleItemExec
 			err := node.Decode(&e)
 			if err != nil {
@@ -61,6 +66,9 @@ func (o *RuleMatchOr) UnmarshalYAML(unmarshal func(any) error) error {
 	if len(_o.Execs) > 0 {
 		execs := make([]*RuleItemExec, 0, len(_o.Execs))
 		for i, node := range _o.Execs {
+			if node.IsZero() {
+				return fmt.Errorf("invalid exec[%d]: empty", i)
+			}
 			var e RuleItemExec
 			err := node.Decode(&e)
 			if err != nil {

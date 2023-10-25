@@ -154,17 +154,20 @@ func listenerHandle(ctx context.Context, listener string, logger log.Logger, wor
 	dnsCtx := adapter.NewDNSContext(ctx, listener, clientAddr.Addr(), req)
 	ctx = dnsCtx.Context()
 	ctx = adapter.SaveLogContext(ctx, dnsCtx)
-	logger.DebugfContext(ctx, "new request: %s", reqMessageInfo(req))
+	messageInfo := reqMessageInfo(req)
+	logger.InfofContext(ctx, "new request: %s", messageInfo)
 	defer func() {
 		err := recover()
 		if err != nil {
-			logger.FatalfContext(ctx, "handle request failed: %s, error(painc): %s", reqMessageInfo(req), err)
+			logger.FatalfContext(ctx, "handle request failed: %s, error(painc): %s", messageInfo, err)
 		}
 	}()
 	_, err := workflow.Exec(ctx, dnsCtx)
 	if err != nil {
+		logger.ErrorfContext(ctx, "handle request failed: %s, error: %s", messageInfo, err)
 		return nil
 	}
+	logger.InfofContext(ctx, "handle request success: %s", messageInfo)
 	resp := dnsCtx.RespMsg()
 	if resp == nil {
 		// Empty Response

@@ -3,6 +3,7 @@ package upstream
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/miekg/dns"
@@ -10,6 +11,10 @@ import (
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/utils"
 )
+
+func init() {
+	os.Setenv("QUIC_GO_DISABLE_RECEIVE_BUFFER_WARNING", " true")
+}
 
 type Options struct {
 	Tag          string

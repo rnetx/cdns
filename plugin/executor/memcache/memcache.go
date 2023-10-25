@@ -145,7 +145,7 @@ func (m *MemCache) Start() error {
 		m.cacheMap = NewCacheMap[cacheItem](m.ctx)
 	}
 	m.cacheMap.Start()
-	if m.dumpInterval > 0 {
+	if m.dumpPath != "" && m.dumpInterval > 0 {
 		m.loopDumpCtx, m.loopDumpCancel = context.WithCancel(m.ctx)
 		m.closeDone = make(chan struct{}, 1)
 		go m.loopDump()
@@ -154,16 +154,18 @@ func (m *MemCache) Start() error {
 }
 
 func (m *MemCache) Close() error {
-	if m.dumpInterval > 0 {
+	if m.dumpPath != "" && m.dumpInterval > 0 {
 		m.loopDumpCancel()
 		<-m.closeDone
 		close(m.closeDone)
 	}
 	cacheMap := m.cacheMap
 	if cacheMap != nil {
-		err := dump(cacheMap, m.dumpPath)
-		if err != nil {
-			m.logger.Errorf("dump cache failed: %s", err)
+		if m.dumpPath != "" {
+			err := dump(cacheMap, m.dumpPath)
+			if err != nil {
+				m.logger.Errorf("dump cache failed: %s", err)
+			}
 		}
 		cacheMap.Close()
 	}
@@ -423,18 +425,21 @@ func keyToReq(key string) (*dns.Msg, error) {
 func respFindMinTTL(resp *dns.Msg) uint32 {
 	var minTTL uint32
 	for _, rr := range resp.Answer {
-		if minTTL == 0 || rr.Header().Ttl < minTTL {
-			minTTL = rr.Header().Ttl
+		ttl := rr.Header().Ttl
+		if minTTL == 0 || (ttl != 0 && ttl < minTTL) {
+			minTTL = ttl
 		}
 	}
 	for _, rr := range resp.Ns {
-		if minTTL == 0 || rr.Header().Ttl < minTTL {
-			minTTL = rr.Header().Ttl
+		ttl := rr.Header().Ttl
+		if minTTL == 0 || (ttl != 0 && ttl < minTTL) {
+			minTTL = ttl
 		}
 	}
 	for _, rr := range resp.Extra {
-		if minTTL == 0 || rr.Header().Ttl < minTTL {
-			minTTL = rr.Header().Ttl
+		ttl := rr.Header().Ttl
+		if minTTL == 0 || (ttl != 0 && ttl < minTTL) {
+			minTTL = ttl
 		}
 	}
 	return minTTL

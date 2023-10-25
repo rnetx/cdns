@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"syscall"
 
 	"github.com/rnetx/cdns/upstream/network/common"
 )
@@ -120,4 +121,15 @@ func (c *AssociatePacketConn) SetReadBuffer(n int) error {
 func (c *AssociatePacketConn) SetWriteBuffer(n int) error {
 	udpConn := c.Conn.(*net.UDPConn)
 	return udpConn.SetWriteBuffer(n + 261)
+}
+
+// QUIC
+func (c *AssociatePacketConn) SyscallConn() (syscall.RawConn, error) {
+	conn, ok := c.Conn.(interface {
+		SyscallConn() (syscall.RawConn, error)
+	})
+	if !ok {
+		return nil, fmt.Errorf("not support syscall conn")
+	}
+	return conn.SyscallConn()
 }

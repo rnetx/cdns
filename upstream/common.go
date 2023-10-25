@@ -28,12 +28,13 @@ func reqMessageInfo(req *dns.Msg) string {
 }
 
 func Exchange(ctx context.Context, req *dns.Msg, logger log.Logger, exchangeFunc func(ctx context.Context, req *dns.Msg) (*dns.Msg, error)) (resp *dns.Msg, err error) {
-	logger.InfoContext(ctx, "exchange: ", reqMessageInfo(req))
+	messageInfo := reqMessageInfo(req)
+	logger.InfoContext(ctx, "exchange: ", messageInfo)
 	defer func() {
 		if err != nil {
-			logger.ErrorfContext(ctx, "exchange failed: %s, error: %s", reqMessageInfo(req), err)
+			logger.ErrorfContext(ctx, "exchange failed: %s, error: %s", messageInfo, err)
 		} else {
-			logger.InfoContext(ctx, "exchange success: ", reqMessageInfo(req))
+			logger.InfoContext(ctx, "exchange success: ", messageInfo)
 		}
 	}()
 	resp, err = exchangeFunc(ctx, req)

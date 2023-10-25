@@ -13,30 +13,32 @@ import (
 )
 
 type RuleItemExec struct {
-	mark        *uint64
-	metadata    map[string]string
-	plugin      *PluginExecutor
-	upstreamTag string
-	upstream    adapter.Upstream
-	jumpToTag   []string
-	jumpTo      []adapter.Workflow
-	goToTag     string
-	goTo        adapter.Workflow
-	setTTL      *uint32
-	clean       bool
-	_return     string
+	mark          *uint64
+	metadata      map[string]string
+	plugin        *PluginExecutor
+	upstreamTag   string
+	upstream      adapter.Upstream
+	jumpToTag     []string
+	jumpTo        []adapter.Workflow
+	goToTag       string
+	goTo          adapter.Workflow
+	workflowRules []Rule
+	setTTL        *uint32
+	clean         bool
+	_return       string
 }
 
 type _RuleItemExec struct {
-	Mark     *uint64                `yaml:"mark,omitempty"`
-	Metadata map[string]string      `yaml:"metadata,omitempty"`
-	Plugin   yaml.Node              `yaml:"plugin,omitempty"`
-	Upstream string                 `yaml:"upstream,omitempty"`
-	JumpTo   utils.Listable[string] `yaml:"jump-to,omitempty"`
-	GoTo     string                 `yaml:"go-to,omitempty"`
-	SetTTL   *uint32                `yaml:"set-ttl,omitempty"`
-	Clean    bool                   `yaml:"clean,omitempty"`
-	Return   any                    `yaml:"return,omitempty"`
+	Mark          *uint64                     `yaml:"mark,omitempty"`
+	Metadata      map[string]string           `yaml:"metadata,omitempty"`
+	Plugin        yaml.Node                   `yaml:"plugin,omitempty"`
+	Upstream      string                      `yaml:"upstream,omitempty"`
+	JumpTo        utils.Listable[string]      `yaml:"jump-to,omitempty"`
+	GoTo          string                      `yaml:"go-to,omitempty"`
+	WorkflowRules utils.Listable[RuleOptions] `yaml:"workflow-rules,omitempty"`
+	SetTTL        *uint32                     `yaml:"set-ttl,omitempty"`
+	Clean         bool                        `yaml:"clean,omitempty"`
+	Return        any                         `yaml:"return,omitempty"`
 }
 
 func (r *RuleItemExec) UnmarshalYAML(unmarshal func(interface{}) error) error {
@@ -86,6 +88,13 @@ func (r *RuleItemExec) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 	if _r.GoTo != "" {
 		r.goToTag = _r.GoTo
+		tag++
+	}
+	if len(_r.WorkflowRules) > 0 {
+		r.workflowRules = make([]Rule, 0, len(_r.WorkflowRules))
+		for _, w := range _r.WorkflowRules {
+			r.workflowRules = append(r.workflowRules, w.rule)
+		}
 		tag++
 	}
 	if _r.SetTTL != nil {
@@ -170,10 +179,18 @@ func (r *RuleItemExec) check(ctx context.Context, core adapter.Core) error {
 		r.goTo = w
 		r.goToTag = "" // clean
 	}
+	if len(r.workflowRules) > 0 {
+		for i, w := range r.workflowRules {
+			err := w.Check(ctx, core)
+			if err != nil {
+				return fmt.Errorf("workflow-rule [%d] check failed: %v", i, err)
+			}
+		}
+	}
 	return nil
 }
 
-func (r *RuleItemExec) exec(ctx context.Context, _ adapter.Core, logger log.Logger, dnsCtx *adapter.DNSContext) (adapter.ReturnMode, error) {
+func (r *RuleItemExec) exec(ctx context.Context, core adapter.Core, logger log.Logger, dnsCtx *adapter.DNSContext) (adapter.ReturnMode, error) {
 	if r.mark != nil {
 		mark := dnsCtx.Mark()
 		dnsCtx.SetMark(*r.mark)
@@ -308,6 +325,25 @@ func (r *RuleItemExec) exec(ctx context.Context, _ adapter.Core, logger log.Logg
 	if r.goTo != nil {
 		logger.DebugfContext(ctx, "go to workflow [%s]", r.goTo.Tag())
 		return r.goTo.Exec(ctx, dnsCtx)
+	}
+	if len(r.workflowRules) > 0 {
+		for i, w := range r.workflowRules {
+			logger.DebugfContext(ctx, "workflow-rule [%d] exec", i)
+			returnMode, err := w.Exec(ctx, core, logger, dnsCtx)
+			if err != nil {
+				logger.ErrorfContext(ctx, "workflow-rule [%d] exec failed: %v", i, err)
+				return adapter.ReturnModeUnknown, err
+			}
+			switch returnMode {
+			case adapter.ReturnModeReturnAll:
+				logger.DebugfContext(ctx, "workflow-rule [%d]: %s", i, returnMode.String())
+				return returnMode, nil
+			case adapter.ReturnModeReturnOnce:
+				logger.DebugfContext(ctx, "workflow-rule [%d]: %s", i, returnMode.String())
+				return adapter.ReturnModeContinue, nil
+			}
+		}
+		return adapter.ReturnModeContinue, nil
 	}
 	if r.setTTL != nil {
 		respMsg := dnsCtx.RespMsg()

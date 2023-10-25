@@ -6,7 +6,6 @@ import (
 
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
-	"github.com/rnetx/cdns/utils"
 	"gopkg.in/yaml.v3"
 )
 
@@ -17,7 +16,7 @@ type RuleExec struct {
 }
 
 type _RuleExec struct {
-	Execs utils.Listable[yaml.Node] `yaml:"exec,omitempty"`
+	Execs []yaml.Node `yaml:"exec,omitempty"`
 }
 
 func (o *RuleExec) UnmarshalYAML(unmarshal func(any) error) error {
@@ -31,6 +30,9 @@ func (o *RuleExec) UnmarshalYAML(unmarshal func(any) error) error {
 	}
 	execs := make([]*RuleItemExec, 0, len(_o.Execs))
 	for i, node := range _o.Execs {
+		if node.IsZero() {
+			return fmt.Errorf("invalid exec[%d]: empty", i)
+		}
 		var e RuleItemExec
 		err := node.Decode(&e)
 		if err != nil {
