@@ -11,11 +11,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/miekg/dns"
-	"github.com/quic-go/quic-go"
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/utils"
+
+	"github.com/miekg/dns"
+	"github.com/quic-go/quic-go"
 )
 
 type QUICListenerOptions struct {

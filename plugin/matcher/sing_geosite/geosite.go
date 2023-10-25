@@ -7,12 +7,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/plugin"
 	"github.com/rnetx/cdns/utils"
 	"github.com/rnetx/cdns/utils/domain"
+
+	"github.com/go-chi/chi/v5"
 )
 
 const Type = "sing-geosite"

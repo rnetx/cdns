@@ -7,8 +7,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/logrusorgru/aurora/v4"
 	"github.com/rnetx/cdns/adapter"
+
+	"github.com/logrusorgru/aurora/v4"
 )
 
 var DefaultLogger Logger

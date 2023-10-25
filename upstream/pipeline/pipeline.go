@@ -7,8 +7,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/rnetx/cdns/utils"
+
+	"github.com/miekg/dns"
 )
 
 type DNSPipelineConn struct {

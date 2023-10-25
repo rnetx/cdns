@@ -68,7 +68,7 @@ func (m *CacheMap[T]) loopHandle() {
 		default:
 		}
 	}()
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {

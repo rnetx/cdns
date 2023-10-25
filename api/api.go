@@ -11,10 +11,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 )
 
 type Options struct {

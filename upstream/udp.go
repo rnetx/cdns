@@ -7,7 +7,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/miekg/dns"
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/upstream/bootstrap"
@@ -16,6 +15,8 @@ import (
 	"github.com/rnetx/cdns/upstream/pipeline"
 	"github.com/rnetx/cdns/upstream/pool"
 	"github.com/rnetx/cdns/utils"
+
+	"github.com/miekg/dns"
 )
 
 type UDPUpstreamOptions struct {

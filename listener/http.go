@@ -11,12 +11,13 @@ import (
 	"net/netip"
 	"strings"
 
-	"github.com/miekg/dns"
-	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/http3"
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/utils"
+
+	"github.com/miekg/dns"
+	"github.com/quic-go/quic-go"
+	"github.com/quic-go/quic-go/http3"
 )
 
 type HTTPListenerOptions struct {

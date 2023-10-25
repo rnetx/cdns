@@ -7,7 +7,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/logrusorgru/aurora/v4"
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/api"
 	"github.com/rnetx/cdns/listener"
@@ -18,6 +17,8 @@ import (
 	"github.com/rnetx/cdns/upstream"
 	"github.com/rnetx/cdns/utils"
 	"github.com/rnetx/cdns/workflow"
+
+	"github.com/logrusorgru/aurora/v4"
 )
 
 func init() {

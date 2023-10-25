@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/logrusorgru/aurora/v4"
 	"github.com/rnetx/cdns/adapter"
+
+	"github.com/logrusorgru/aurora/v4"
 )
 
 var (

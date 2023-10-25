@@ -4,9 +4,10 @@ import (
 	"context"
 	"os"
 
-	"github.com/logrusorgru/aurora/v4"
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
+
+	"github.com/logrusorgru/aurora/v4"
 )
 
 var simpleCore *SimpleCore

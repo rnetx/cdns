@@ -15,15 +15,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/miekg/dns"
-	"github.com/quic-go/quic-go"
-	"github.com/quic-go/quic-go/http3"
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/upstream/bootstrap"
 	"github.com/rnetx/cdns/upstream/network"
 	"github.com/rnetx/cdns/upstream/network/common"
 	"github.com/rnetx/cdns/utils"
+
+	"github.com/miekg/dns"
+	"github.com/quic-go/quic-go"
+	"github.com/quic-go/quic-go/http3"
 )
 
 type HTTPSUpstreamOptions struct {

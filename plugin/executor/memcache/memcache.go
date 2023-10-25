@@ -11,12 +11,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/miekg/dns"
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/plugin"
 	"github.com/rnetx/cdns/utils"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/miekg/dns"
 )
 
 const Type = "memcache"
@@ -34,7 +35,7 @@ type Args struct {
 
 type runningArgs struct {
 	Mode   string `json:"mode"`
-	Return bool   `json:"return"`
+	Return any    `json:"return"`
 }
 
 type cacheItem struct {
@@ -208,6 +209,25 @@ func (m *MemCache) LoadRunningArgs(_ context.Context, args any) (uint16, error) 
 	default:
 		return 0, fmt.Errorf("unknown mode: %s", a.Mode)
 	}
+	switch r := a.Return.(type) {
+	case string:
+		switch r {
+		case "All", "all":
+			a.Return = "all"
+		case "Once", "once":
+			a.Return = "once"
+		default:
+			return 0, fmt.Errorf("unknown return: %s", r)
+		}
+	case bool:
+		if r {
+			a.Return = "all"
+		} else {
+			a.Return = ""
+		}
+	default:
+		return 0, fmt.Errorf("unknown return: %v", r)
+	}
 	if m.runningArgsMap == nil {
 		m.runningArgsMap = make(map[uint16]runningArgs)
 	}
@@ -291,9 +311,17 @@ func (m *MemCache) Exec(ctx context.Context, dnsCtx *adapter.DNSContext, argsID 
 			}
 		}
 	}
-	if ok && args.Return {
-		m.logger.DebugfContext(ctx, "return all")
-		return adapter.ReturnModeReturnAll, nil
+	returnMode := args.Return.(string)
+	if ok && returnMode != "" {
+		var mode adapter.ReturnMode
+		switch returnMode {
+		case "all":
+			mode = adapter.ReturnModeReturnAll
+		case "once":
+			mode = adapter.ReturnModeReturnOnce
+		}
+		m.logger.DebugContext(ctx, mode.String())
+		return mode, nil
 	}
 	return adapter.ReturnModeContinue, nil
 }
