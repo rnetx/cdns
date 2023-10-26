@@ -92,6 +92,10 @@ func (c *DNSContext) FlushColor() {
 	c.color = 0
 }
 
+func (c *DNSContext) InitTime() time.Time {
+	return c.initTime
+}
+
 func (c *DNSContext) Duration() time.Duration {
 	return time.Since(c.initTime)
 }

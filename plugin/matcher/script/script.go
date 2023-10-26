@@ -71,7 +71,7 @@ func NewScript(ctx context.Context, _ adapter.Core, logger log.Logger, tag strin
 		return nil, fmt.Errorf("parse args failed: %w", err)
 	}
 	if a.Command == "" {
-		return nil, fmt.Errorf("missing path")
+		return nil, fmt.Errorf("missing command")
 	}
 	s.command = a.Command
 	s.args = a.Args
