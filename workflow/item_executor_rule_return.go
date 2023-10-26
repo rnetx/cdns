@@ -84,5 +84,6 @@ func (r *itemExecutorReturnRule) exec(ctx context.Context, core adapter.Core, lo
 	newRespMsg := &dns.Msg{}
 	newRespMsg.SetRcode(dnsCtx.ReqMsg(), rcode)
 	newRespMsg.Ns = []dns.RR{utils.FakeSOA(name)}
+	dnsCtx.SetRespMsg(newRespMsg)
 	return adapter.ReturnModeReturnAll, nil
 }

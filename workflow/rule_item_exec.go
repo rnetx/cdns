@@ -51,7 +51,7 @@ func (r *RuleItemExec) UnmarshalYAML(unmarshal func(interface{}) error) error {
 				return nil
 			case "return":
 				r.rule = &itemExecutorReturnRule{
-					_return: "return",
+					_return: "all",
 				}
 				return nil
 			}

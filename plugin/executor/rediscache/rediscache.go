@@ -3,6 +3,7 @@ package rediscache
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/netip"
@@ -89,7 +90,7 @@ func (r *RedisCache) Start() error {
 		network = "unix"
 	)
 	addr, err := netip.ParseAddrPort(r.address)
-	if err != nil {
+	if err == nil {
 		network = "tcp"
 		address = addr.String()
 	}
@@ -119,24 +120,26 @@ func (r *RedisCache) LoadRunningArgs(_ context.Context, args any) (uint16, error
 	default:
 		return 0, fmt.Errorf("unknown mode: %s", a.Mode)
 	}
-	switch r := a.Return.(type) {
-	case string:
-		switch r {
-		case "All", "all":
-			a.Return = "all"
-		case "Once", "once":
-			a.Return = "once"
+	if a.Return != nil {
+		switch r := a.Return.(type) {
+		case string:
+			switch r {
+			case "All", "all":
+				a.Return = "all"
+			case "Once", "once":
+				a.Return = "once"
+			default:
+				return 0, fmt.Errorf("unknown return: %s", r)
+			}
+		case bool:
+			if r {
+				a.Return = "all"
+			} else {
+				a.Return = ""
+			}
 		default:
-			return 0, fmt.Errorf("unknown return: %s", r)
+			return 0, fmt.Errorf("unknown return: %v", r)
 		}
-	case bool:
-		if r {
-			a.Return = "all"
-		} else {
-			a.Return = ""
-		}
-	default:
-		return 0, fmt.Errorf("unknown return: %v", r)
 	}
 	if r.runningArgsMap == nil {
 		r.runningArgsMap = make(map[uint16]runningArgs)
@@ -183,14 +186,14 @@ func (r *RedisCache) Exec(ctx context.Context, dnsCtx *adapter.DNSContext, argsI
 		}
 		respRaw, err := respMsg.Pack()
 		if err != nil {
-			r.logger.DebugContext(ctx, "pack response message failed: %w", err)
+			r.logger.DebugfContext(ctx, "pack response message failed: %w", err)
 			return adapter.ReturnModeContinue, nil
 		}
 		respStr := base64.StdEncoding.EncodeToString(respRaw)
 		r.logger.DebugfContext(ctx, "store key: %s, ttl: %d", key, ttl)
 		err = r.client.Set(r.ctx, key, respStr, time.Duration(ttl)*time.Second).Err()
 		if err != nil {
-			r.logger.DebugContext(ctx, "store key failed: %s, error: %w", key, err)
+			r.logger.DebugfContext(ctx, "store key failed: %s, error: %w", key, err)
 			return adapter.ReturnModeContinue, nil
 		}
 		ok = true
@@ -206,27 +209,35 @@ func (r *RedisCache) Exec(ctx context.Context, dnsCtx *adapter.DNSContext, argsI
 			return adapter.ReturnModeContinue, nil
 		}
 		value, err := r.client.Get(r.ctx, key).Result()
-		if err != nil {
-			r.logger.DebugContext(ctx, "get key failed: %s, error: %w", key, err)
+		if err != nil && !errors.Is(err, redis.Nil) {
+			r.logger.DebugfContext(ctx, "get key failed: %s, error: %w", key, err)
 			return adapter.ReturnModeContinue, nil
 		}
-		respRaw, err := base64.StdEncoding.DecodeString(value)
-		if err != nil {
-			r.logger.DebugContext(ctx, "decode response message failed: %w", err)
-			return adapter.ReturnModeContinue, nil
+		if !errors.Is(err, redis.Nil) && value != "" {
+			respRaw, err := base64.StdEncoding.DecodeString(value)
+			if err != nil {
+				r.logger.DebugfContext(ctx, "decode response message failed: %w", err)
+				return adapter.ReturnModeContinue, nil
+			}
+			respMsg := &dns.Msg{}
+			err = respMsg.Unpack(respRaw)
+			if err != nil {
+				r.logger.DebugfContext(ctx, "unpack response message failed: %w", err)
+				return adapter.ReturnModeContinue, nil
+			}
+			r.logger.DebugfContext(ctx, "restore key: %s", key)
+			respMsg.SetReply(reqMsg)
+			dnsCtx.SetRespMsg(respMsg)
+			ok = true
 		}
-		respMsg := &dns.Msg{}
-		err = respMsg.Unpack(respRaw)
-		if err != nil {
-			r.logger.DebugContext(ctx, "unpack response message failed: %w", err)
-			return adapter.ReturnModeContinue, nil
+		if errors.Is(err, redis.Nil) {
+			r.logger.DebugfContext(ctx, "key not found: %s", key)
 		}
-		r.logger.DebugfContext(ctx, "restore key: %s", key)
-		respMsg.SetReply(reqMsg)
-		dnsCtx.SetRespMsg(respMsg)
-		ok = true
 	}
-	returnMode := args.Return.(string)
+	var returnMode string
+	if args.Return != nil {
+		returnMode = args.Return.(string)
+	}
 	if ok && returnMode != "" {
 		var mode adapter.ReturnMode
 		switch returnMode {

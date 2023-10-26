@@ -160,24 +160,26 @@ func (m *MemCache) LoadRunningArgs(_ context.Context, args any) (uint16, error) 
 	default:
 		return 0, fmt.Errorf("unknown mode: %s", a.Mode)
 	}
-	switch r := a.Return.(type) {
-	case string:
-		switch r {
-		case "All", "all":
-			a.Return = "all"
-		case "Once", "once":
-			a.Return = "once"
+	if a.Return != nil {
+		switch r := a.Return.(type) {
+		case string:
+			switch r {
+			case "All", "all":
+				a.Return = "all"
+			case "Once", "once":
+				a.Return = "once"
+			default:
+				return 0, fmt.Errorf("unknown return: %s", r)
+			}
+		case bool:
+			if r {
+				a.Return = "all"
+			} else {
+				a.Return = ""
+			}
 		default:
-			return 0, fmt.Errorf("unknown return: %s", r)
+			return 0, fmt.Errorf("unknown return: %v", r)
 		}
-	case bool:
-		if r {
-			a.Return = "all"
-		} else {
-			a.Return = ""
-		}
-	default:
-		return 0, fmt.Errorf("unknown return: %v", r)
 	}
 	if m.runningArgsMap == nil {
 		m.runningArgsMap = make(map[uint16]runningArgs)
@@ -251,7 +253,10 @@ func (m *MemCache) Exec(ctx context.Context, dnsCtx *adapter.DNSContext, argsID 
 			}
 		}
 	}
-	returnMode := args.Return.(string)
+	var returnMode string
+	if args.Return != nil {
+		returnMode = args.Return.(string)
+	}
 	if ok && returnMode != "" {
 		var mode adapter.ReturnMode
 		switch returnMode {
