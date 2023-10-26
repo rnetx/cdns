@@ -88,6 +88,10 @@ func (c *DNSContext) Color() aurora.Color {
 	return c.color
 }
 
+func (c *DNSContext) FlushColor() {
+	c.color = 0
+}
+
 func (c *DNSContext) Duration() time.Duration {
 	return time.Since(c.initTime)
 }

@@ -18,26 +18,26 @@ type RuleMatchAnd struct {
 	Execs     []*RuleItemExec
 }
 
-type _RuleMatchAnd struct {
+type RuleMatchAndOptions struct {
 	MatchAnds []yaml.Node `yaml:"match-and,omitempty"`
 	ElseExecs []yaml.Node `yaml:"else-exec,omitempty"`
 	Execs     []yaml.Node `yaml:"exec,omitempty"`
 }
 
-func (o *RuleMatchAnd) UnmarshalYAML(unmarshal func(any) error) error {
-	var _o _RuleMatchAnd
-	err := unmarshal(&_o)
+func (r *RuleMatchAnd) UnmarshalYAML(unmarshal func(any) error) error {
+	var o RuleMatchAndOptions
+	err := unmarshal(&o)
 	if err != nil {
 		return err
 	}
-	if len(_o.MatchAnds) == 0 {
+	if len(o.MatchAnds) == 0 {
 		return fmt.Errorf("missing match-and")
 	}
-	if len(_o.Execs) == 0 && len(_o.ElseExecs) == 0 {
+	if len(o.Execs) == 0 && len(o.ElseExecs) == 0 {
 		return fmt.Errorf("missing exec or(and) else-exec")
 	}
-	matchAnds := make([]*RuleItemMatch, 0, len(_o.MatchAnds))
-	for i, node := range _o.MatchAnds {
+	matchAnds := make([]*RuleItemMatch, 0, len(o.MatchAnds))
+	for i, node := range o.MatchAnds {
 		if node.IsZero() {
 			return fmt.Errorf("invalid match-and[%d]: empty", i)
 		}
@@ -48,10 +48,10 @@ func (o *RuleMatchAnd) UnmarshalYAML(unmarshal func(any) error) error {
 		}
 		matchAnds = append(matchAnds, &m)
 	}
-	o.MatchAnds = matchAnds
-	if len(_o.ElseExecs) > 0 {
-		elseExecs := make([]*RuleItemExec, 0, len(_o.ElseExecs))
-		for i, node := range _o.ElseExecs {
+	r.MatchAnds = matchAnds
+	if len(o.ElseExecs) > 0 {
+		elseExecs := make([]*RuleItemExec, 0, len(o.ElseExecs))
+		for i, node := range o.ElseExecs {
 			if node.IsZero() {
 				return fmt.Errorf("invalid else-exec[%d]: empty", i)
 			}
@@ -62,11 +62,11 @@ func (o *RuleMatchAnd) UnmarshalYAML(unmarshal func(any) error) error {
 			}
 			elseExecs = append(elseExecs, &e)
 		}
-		o.ElseExecs = elseExecs
+		r.ElseExecs = elseExecs
 	}
-	if len(_o.Execs) > 0 {
-		execs := make([]*RuleItemExec, 0, len(_o.Execs))
-		for i, node := range _o.Execs {
+	if len(o.Execs) > 0 {
+		execs := make([]*RuleItemExec, 0, len(o.Execs))
+		for i, node := range o.Execs {
 			if node.IsZero() {
 				return fmt.Errorf("invalid exec[%d]: empty", i)
 			}
@@ -77,26 +77,26 @@ func (o *RuleMatchAnd) UnmarshalYAML(unmarshal func(any) error) error {
 			}
 			execs = append(execs, &e)
 		}
-		o.Execs = execs
+		r.Execs = execs
 	}
 	return nil
 }
 
-func (o *RuleMatchAnd) Check(ctx context.Context, core adapter.Core) error {
+func (r *RuleMatchAnd) Check(ctx context.Context, core adapter.Core) error {
 	var err error
-	for i, m := range o.MatchAnds {
+	for i, m := range r.MatchAnds {
 		err = m.check(ctx, core)
 		if err != nil {
 			return fmt.Errorf("match-and[%d]: %w", i, err)
 		}
 	}
-	for i, e := range o.ElseExecs {
+	for i, e := range r.ElseExecs {
 		err = e.check(ctx, core)
 		if err != nil {
 			return fmt.Errorf("else-exec[%d]: %w", i, err)
 		}
 	}
-	for i, e := range o.Execs {
+	for i, e := range r.Execs {
 		err = e.check(ctx, core)
 		if err != nil {
 			return fmt.Errorf("exec[%d]: %w", i, err)
@@ -105,9 +105,9 @@ func (o *RuleMatchAnd) Check(ctx context.Context, core adapter.Core) error {
 	return nil
 }
 
-func (o *RuleMatchAnd) Exec(ctx context.Context, core adapter.Core, logger log.Logger, dnsCtx *adapter.DNSContext) (adapter.ReturnMode, error) {
+func (r *RuleMatchAnd) Exec(ctx context.Context, core adapter.Core, logger log.Logger, dnsCtx *adapter.DNSContext) (adapter.ReturnMode, error) {
 	match := true
-	for i, m := range o.MatchAnds {
+	for i, m := range r.MatchAnds {
 		logger.DebugfContext(ctx, "run match-and[%d]", i)
 		matched, err := m.match(ctx, core, logger, dnsCtx)
 		if err != nil {
@@ -123,8 +123,8 @@ func (o *RuleMatchAnd) Exec(ctx context.Context, core adapter.Core, logger log.L
 	}
 	logger.DebugfContext(ctx, "run match-and finish")
 	if match {
-		if len(o.Execs) > 0 {
-			for i, e := range o.Execs {
+		if len(r.Execs) > 0 {
+			for i, e := range r.Execs {
 				logger.DebugfContext(ctx, "run exec[%d]", i)
 				returnMode, err := e.exec(ctx, core, logger, dnsCtx)
 				if err != nil {
@@ -144,8 +144,8 @@ func (o *RuleMatchAnd) Exec(ctx context.Context, core adapter.Core, logger log.L
 			return returnMode, nil
 		}
 	} else {
-		if len(o.ElseExecs) > 0 {
-			for i, e := range o.ElseExecs {
+		if len(r.ElseExecs) > 0 {
+			for i, e := range r.ElseExecs {
 				logger.DebugfContext(ctx, "run else-exec[%d]", i)
 				returnMode, err := e.exec(ctx, core, logger, dnsCtx)
 				if err != nil {

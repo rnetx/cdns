@@ -13,21 +13,21 @@ type PluginExecutor struct {
 	executor adapter.PluginExecutor
 }
 
-type _PluginExecutor struct {
+type PluginExecutorOptions struct {
 	Tag  string `yaml:"tag,omitempty"`
 	Args any    `yaml:"args,omitempty"`
 }
 
 func (p *PluginExecutor) UnmarshalYAML(unmarshal func(any) error) error {
-	var _p _PluginExecutor
-	err := unmarshal(&_p)
+	var o PluginExecutorOptions
+	err := unmarshal(&o)
 	if err != nil {
 		return err
 	}
-	if _p.Tag == "" {
+	if o.Tag == "" {
 		return fmt.Errorf("missing tag")
 	}
-	p.tag = _p.Tag
-	p.args = _p.Args
+	p.tag = o.Tag
+	p.args = o.Args
 	return nil
 }

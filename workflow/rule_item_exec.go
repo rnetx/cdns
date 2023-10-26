@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
@@ -24,12 +25,14 @@ type RuleItemExec struct {
 	goToTag       string
 	goTo          adapter.Workflow
 	workflowRules []Rule
+	fallback      *Fallback
+	parallel      *Parallel
 	setTTL        *uint32
 	clean         bool
 	_return       string
 }
 
-type _RuleItemExec struct {
+type RuleItemExecOptions struct {
 	Mark          *uint64                     `yaml:"mark,omitempty"`
 	Metadata      map[string]string           `yaml:"metadata,omitempty"`
 	Plugin        yaml.Node                   `yaml:"plugin,omitempty"`
@@ -37,14 +40,16 @@ type _RuleItemExec struct {
 	JumpTo        utils.Listable[string]      `yaml:"jump-to,omitempty"`
 	GoTo          string                      `yaml:"go-to,omitempty"`
 	WorkflowRules utils.Listable[RuleOptions] `yaml:"workflow-rules,omitempty"`
+	Fallback      *FallbackOptions            `yaml:"fallback,omitempty"`
+	Parallel      *ParallelOptions            `yaml:"parallel,omitempty"`
 	SetTTL        *uint32                     `yaml:"set-ttl,omitempty"`
 	Clean         bool                        `yaml:"clean,omitempty"`
 	Return        any                         `yaml:"return,omitempty"`
 }
 
 func (r *RuleItemExec) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var _r _RuleItemExec
-	err := unmarshal(&_r)
+	var o RuleItemExecOptions
+	err := unmarshal(&o)
 	if err != nil {
 		// String
 		var s string
@@ -62,53 +67,101 @@ func (r *RuleItemExec) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return err
 	}
 	tag := 0
-	if _r.Mark != nil {
+	if o.Mark != nil {
 		r.mark = new(uint64)
-		*r.mark = *_r.Mark
+		*r.mark = *o.Mark
 		tag++
 	}
-	if _r.Metadata != nil && len(_r.Metadata) > 0 {
-		r.metadata = _r.Metadata
+	if o.Metadata != nil && len(o.Metadata) > 0 {
+		r.metadata = o.Metadata
 		tag++
 	}
-	if !_r.Plugin.IsZero() {
+	if !o.Plugin.IsZero() {
 		r.plugin = &PluginExecutor{}
-		err := _r.Plugin.Decode(&r.plugin)
+		err := o.Plugin.Decode(&r.plugin)
 		if err != nil {
 			return fmt.Errorf("invalid plugin: %v", err)
 		}
 		tag++
 	}
-	if _r.Upstream != "" {
-		r.upstreamTag = _r.Upstream
+	if o.Upstream != "" {
+		r.upstreamTag = o.Upstream
 		tag++
 	}
-	if len(_r.JumpTo) > 0 {
-		r.jumpToTag = _r.JumpTo
+	if len(o.JumpTo) > 0 {
+		r.jumpToTag = o.JumpTo
 		tag++
 	}
-	if _r.GoTo != "" {
-		r.goToTag = _r.GoTo
+	if o.GoTo != "" {
+		r.goToTag = o.GoTo
 		tag++
 	}
-	if len(_r.WorkflowRules) > 0 {
-		r.workflowRules = make([]Rule, 0, len(_r.WorkflowRules))
-		for _, w := range _r.WorkflowRules {
+	if len(o.WorkflowRules) > 0 {
+		r.workflowRules = make([]Rule, 0, len(o.WorkflowRules))
+		for _, w := range o.WorkflowRules {
 			r.workflowRules = append(r.workflowRules, w.rule)
 		}
 		tag++
 	}
-	if _r.SetTTL != nil {
-		r.setTTL = new(uint32)
-		*r.setTTL = *_r.SetTTL
+	if o.Fallback != nil {
+		fallback := &Fallback{}
+		var mainTag int
+		if o.Fallback.Main != nil && len(o.Fallback.Main) > 0 {
+			fallback.main = make([]Rule, 0, len(o.Fallback.Main))
+			for _, w := range o.Fallback.Main {
+				fallback.main = append(fallback.main, w.rule)
+			}
+			mainTag++
+		}
+		if o.Fallback.MainWorkflow != "" {
+			fallback.mainWorkflowTag = o.Fallback.MainWorkflow
+			mainTag++
+		}
+		if mainTag != 1 {
+			return fmt.Errorf("main and main-workflow must be set one")
+		}
+		var fallbackTag int
+		if o.Fallback.Fallback != nil && len(o.Fallback.Fallback) > 0 {
+			fallback.fallback = make([]Rule, 0, len(o.Fallback.Fallback))
+			for _, w := range o.Fallback.Fallback {
+				fallback.fallback = append(fallback.fallback, w.rule)
+			}
+			fallbackTag++
+		}
+		if o.Fallback.FallbackWorkflow != "" {
+			fallback.fallbackWorkflowTag = o.Fallback.FallbackWorkflow
+			fallbackTag++
+		}
+		if fallbackTag != 1 {
+			return fmt.Errorf("fallback and fallback-workflow must be set one")
+		}
+		fallback.alwaysStandby = o.Fallback.AlwaysStandby
+		if o.Fallback.WaitTime > 0 {
+			fallback.waitTime = time.Duration(o.Fallback.WaitTime)
+			if fallback.alwaysStandby {
+				return fmt.Errorf("always-standby and wait-time must be set one")
+			}
+		}
+		r.fallback = fallback
 		tag++
 	}
-	if _r.Clean {
+	if o.Parallel != nil && len(o.Parallel.Workflows) > 0 {
+		r.parallel = &Parallel{
+			workflowTags: o.Parallel.Workflows,
+		}
+		tag++
+	}
+	if o.SetTTL != nil {
+		r.setTTL = new(uint32)
+		*r.setTTL = *o.SetTTL
+		tag++
+	}
+	if o.Clean {
 		r.clean = true
 		tag++
 	}
-	if _r.Return != nil {
-		switch rr := _r.Return.(type) {
+	if o.Return != nil {
+		switch rr := o.Return.(type) {
 		case string:
 			rr = strings.ToLower(rr)
 			switch rr {
@@ -187,6 +240,35 @@ func (r *RuleItemExec) check(ctx context.Context, core adapter.Core) error {
 				return fmt.Errorf("workflow-rule [%d] check failed: %v", i, err)
 			}
 		}
+	}
+	if r.fallback != nil {
+		if r.fallback.mainWorkflowTag != "" {
+			w := core.GetWorkflow(r.fallback.mainWorkflowTag)
+			if w == nil {
+				return fmt.Errorf("fallback: main workflow [%s] not found", r.fallback.mainWorkflowTag)
+			}
+			r.fallback.mainWorkflow = w
+			r.fallback.mainWorkflowTag = "" // clean
+		}
+		if r.fallback.fallbackWorkflowTag != "" {
+			w := core.GetWorkflow(r.fallback.fallbackWorkflowTag)
+			if w == nil {
+				return fmt.Errorf("fallback: fallback workflow [%s] not found", r.fallback.fallbackWorkflowTag)
+			}
+			r.fallback.fallbackWorkflow = w
+			r.fallback.fallbackWorkflowTag = "" // clean
+		}
+	}
+	if r.parallel != nil {
+		r.parallel.workflows = make([]adapter.Workflow, 0, len(r.parallel.workflowTags))
+		for _, tag := range r.parallel.workflowTags {
+			w := core.GetWorkflow(tag)
+			if w == nil {
+				return fmt.Errorf("parallel: workflow [%s] not found", tag)
+			}
+			r.parallel.workflows = append(r.parallel.workflows, w)
+		}
+		r.parallel.workflowTags = nil // clean
 	}
 	return nil
 }
@@ -346,6 +428,287 @@ func (r *RuleItemExec) exec(ctx context.Context, core adapter.Core, logger log.L
 		}
 		return adapter.ReturnModeContinue, nil
 	}
+	if r.fallback != nil {
+		ch := utils.NewSafeChan[fallbackResult](1)
+		defer ch.Close()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		var (
+			waitFallbackCtx  context.Context
+			waitFallbackFunc context.CancelFunc
+		)
+		if !r.fallback.alwaysStandby && r.fallback.waitTime > 0 {
+			waitFallbackCtx, waitFallbackFunc = context.WithCancel(ctx)
+			defer waitFallbackFunc()
+		}
+		mainDNSCtx := dnsCtx.Clone()
+		mainDNSCtx.SetID(mainDNSCtx.ID() + 1)
+		mainDNSCtx.FlushColor()
+		if r.fallback.mainWorkflow != nil {
+			go func(
+				ctx context.Context,
+				ch *utils.SafeChan[fallbackResult],
+				dnsCtx *adapter.DNSContext,
+				logger log.Logger,
+				w adapter.Workflow,
+			) {
+				defer ch.Close()
+				logger.DebugfContext(ctx, "fallback: main workflow [%s] exec, id: %d", w.Tag(), dnsCtx.ID())
+				returnMode, err := w.Exec(adapter.SaveLogContext(ctx, dnsCtx), dnsCtx)
+				if err != nil {
+					logger.DebugfContext(ctx, "fallback: main workflow [%s] exec failed: %v", w.Tag(), err)
+				} else {
+					logger.DebugfContext(ctx, "fallback: main workflow [%s] exec success", w.Tag())
+					select {
+					case ch.SendChan() <- fallbackResult{
+						dnsCtx:     dnsCtx,
+						returnMode: returnMode,
+					}:
+					default:
+					}
+				}
+			}(
+				ctx,
+				ch.Clone(),
+				mainDNSCtx,
+				logger,
+				r.fallback.mainWorkflow,
+			)
+		} else {
+			go func(
+				ctx context.Context,
+				ch *utils.SafeChan[fallbackResult],
+				dnsCtx *adapter.DNSContext,
+				core adapter.Core,
+				logger log.Logger,
+				rules []Rule,
+			) {
+				defer ch.Close()
+				logger.DebugfContext(ctx, "fallback: main rules exec, id: %d", dnsCtx.ID())
+				var (
+					returnMode adapter.ReturnMode
+					err        error
+				)
+				rCtx := adapter.SaveLogContext(ctx, dnsCtx)
+				for i, r := range rules {
+					logger.DebugfContext(ctx, "fallback: main rule[%d] exec", i)
+					returnMode, err = r.Exec(rCtx, core, logger, dnsCtx)
+					if err != nil {
+						logger.DebugfContext(ctx, "fallback: main rule[%d] exec failed: %v", i, err)
+						return
+					}
+					if returnMode != adapter.ReturnModeContinue {
+						logger.DebugfContext(ctx, "fallback: main rule[%d] exec success: %s", i, returnMode.String())
+						break
+					}
+				}
+				logger.DebugfContext(ctx, "fallback: main rules exec success: %s", returnMode.String())
+				select {
+				case ch.SendChan() <- fallbackResult{
+					dnsCtx:     dnsCtx,
+					returnMode: returnMode,
+				}:
+				default:
+				}
+			}(
+				ctx,
+				ch.Clone(),
+				mainDNSCtx,
+				core,
+				logger,
+				r.fallback.main,
+			)
+		}
+		fallbackDNSCtx := dnsCtx.Clone()
+		fallbackDNSCtx.SetID(fallbackDNSCtx.ID() + 2)
+		fallbackDNSCtx.FlushColor()
+		if r.fallback.fallbackWorkflow != nil {
+			go func(
+				ctx context.Context,
+				ch *utils.SafeChan[fallbackResult],
+				dnsCtx *adapter.DNSContext,
+				logger log.Logger,
+				w adapter.Workflow,
+				alwaysStandby bool,
+				waitTime time.Duration,
+				waitFallbackCtx context.Context,
+			) {
+				defer ch.Close()
+				logger.DebugfContext(ctx, "fallback: fallback workflow [%s] exec, id: %d", w.Tag(), dnsCtx.ID())
+				if !alwaysStandby && waitTime > 0 {
+					logger.DebugfContext(ctx, "fallback: fallback workflow [%s] waiting...", w.Tag())
+					select {
+					case <-waitFallbackCtx.Done():
+						select {
+						case <-ctx.Done():
+							return
+						default:
+						}
+					case <-ctx.Done():
+						return
+					}
+				}
+				returnMode, err := w.Exec(adapter.SaveLogContext(ctx, dnsCtx), dnsCtx)
+				if err != nil {
+					logger.DebugfContext(ctx, "fallback: fallback workflow [%s] exec failed: %v", w.Tag(), err)
+				} else {
+					logger.DebugfContext(ctx, "fallback: fallback workflow [%s] exec success", w.Tag())
+					select {
+					case ch.SendChan() <- fallbackResult{
+						dnsCtx:     dnsCtx,
+						returnMode: returnMode,
+						isFallback: true,
+					}:
+					default:
+					}
+				}
+			}(
+				ctx,
+				ch.Clone(),
+				fallbackDNSCtx,
+				logger,
+				r.fallback.fallbackWorkflow,
+				r.fallback.alwaysStandby,
+				r.fallback.waitTime,
+				waitFallbackCtx,
+			)
+		} else {
+			go func(
+				ctx context.Context,
+				ch *utils.SafeChan[fallbackResult],
+				dnsCtx *adapter.DNSContext,
+				core adapter.Core,
+				logger log.Logger,
+				rules []Rule,
+				alwaysStandby bool,
+				waitTime time.Duration,
+				waitFallbackCtx context.Context,
+			) {
+				defer ch.Close()
+				logger.DebugfContext(ctx, "fallback: fallback rules exec, id: %d", dnsCtx.ID())
+				if !alwaysStandby && waitTime > 0 {
+					logger.DebugContext(ctx, "fallback: fallback rules waiting...")
+					select {
+					case <-waitFallbackCtx.Done():
+						select {
+						case <-ctx.Done():
+							return
+						default:
+						}
+					case <-ctx.Done():
+						return
+					}
+				}
+				var (
+					returnMode adapter.ReturnMode
+					err        error
+				)
+				rCtx := adapter.SaveLogContext(ctx, dnsCtx)
+				for i, r := range rules {
+					logger.DebugfContext(ctx, "fallback: fallback rule[%d] exec", i)
+					returnMode, err = r.Exec(rCtx, core, logger, dnsCtx)
+					if err != nil {
+						logger.DebugfContext(ctx, "fallback: fallback rule[%d] exec failed: %v", i, err)
+						return
+					}
+					if returnMode != adapter.ReturnModeContinue {
+						logger.DebugfContext(ctx, "fallback: fallback rule[%d] exec success: %s", returnMode.String())
+						break
+					}
+				}
+				logger.DebugfContext(ctx, "fallback: fallback rules exec success: %s", returnMode.String())
+				select {
+				case ch.SendChan() <- fallbackResult{
+					dnsCtx:     dnsCtx,
+					returnMode: returnMode,
+					isFallback: true,
+				}:
+				default:
+				}
+			}(
+				ctx,
+				ch.Clone(),
+				fallbackDNSCtx,
+				core,
+				logger,
+				r.fallback.fallback,
+				r.fallback.alwaysStandby,
+				r.fallback.waitTime,
+				waitFallbackCtx,
+			)
+		}
+		select {
+		case result := <-ch.ReceiveChan():
+			if !result.isFallback {
+				logger.DebugfContext(ctx, "fallback: main exec success: %s", result.returnMode.String())
+			} else {
+				logger.DebugfContext(ctx, "fallback: fallback exec success: %s", result.returnMode.String())
+			}
+			oldID := dnsCtx.ID()
+			*dnsCtx = *result.dnsCtx
+			dnsCtx.SetID(oldID)
+			dnsCtx.FlushColor()
+			return result.returnMode, nil
+		case <-ctx.Done():
+			logger.DebugfContext(ctx, "fallback: timeout")
+			return adapter.ReturnModeUnknown, ctx.Err()
+		}
+	}
+	if r.parallel != nil {
+		ch := utils.NewSafeChan[parallelResult](1)
+		defer ch.Close()
+		taskGroup := utils.NewTaskGroupWithContext(ctx)
+		defer taskGroup.Close()
+		for i, w := range r.parallel.workflows {
+			iDNSCtx := dnsCtx.Clone()
+			iDNSCtx.SetID(iDNSCtx.ID() + uint32(i) + 1)
+			iDNSCtx.FlushColor()
+			logger.DebugfContext(ctx, "parallel: workflow [%s] exec, id: %d", w.Tag(), iDNSCtx.ID())
+			go func(
+				ctx context.Context,
+				task *utils.Task,
+				dnsCtx *adapter.DNSContext,
+				ch *utils.SafeChan[parallelResult],
+				w adapter.Workflow,
+			) {
+				defer task.Finish()
+				defer ch.Close()
+				returnMode, err := w.Exec(adapter.SaveLogContext(ctx, dnsCtx), dnsCtx)
+				if err == nil {
+					select {
+					case ch.SendChan() <- parallelResult{
+						w:          w,
+						dnsCtx:     dnsCtx,
+						returnMode: returnMode,
+					}:
+					default:
+					}
+				}
+			}(
+				ctx,
+				taskGroup.AddTask(),
+				iDNSCtx,
+				ch.Clone(),
+				w,
+			)
+		}
+		select {
+		case result := <-ch.ReceiveChan():
+			logger.DebugfContext(ctx, "parallel: workflow [%s] exec success: %s", result.w.Tag(), result.returnMode.String())
+			oldID := dnsCtx.ID()
+			*dnsCtx = *result.dnsCtx
+			dnsCtx.SetID(oldID)
+			dnsCtx.FlushColor()
+			return result.returnMode, nil
+		case <-ctx.Done():
+			logger.ErrorContext(ctx, "parallel: timeout")
+			return adapter.ReturnModeUnknown, ctx.Err()
+		case <-taskGroup.Wait():
+			err := fmt.Errorf("parallel: all workflow exec failed")
+			logger.ErrorContext(ctx, err)
+			return adapter.ReturnModeUnknown, err
+		}
+	}
 	if r.setTTL != nil {
 		respMsg := dnsCtx.RespMsg()
 		if respMsg == nil {
@@ -403,4 +766,45 @@ type exchangeResult struct {
 	req   *dns.Msg
 	resp  *dns.Msg
 	err   error
+}
+
+type fallbackResult struct {
+	isFallback bool
+	dnsCtx     *adapter.DNSContext
+	returnMode adapter.ReturnMode
+}
+
+type Fallback struct {
+	main                []Rule
+	fallback            []Rule
+	mainWorkflowTag     string
+	mainWorkflow        adapter.Workflow
+	fallbackWorkflowTag string
+	fallbackWorkflow    adapter.Workflow
+	alwaysStandby       bool
+	waitTime            time.Duration
+}
+
+type FallbackOptions struct {
+	Main             utils.Listable[RuleOptions] `yaml:"main,omitempty"`
+	Fallback         utils.Listable[RuleOptions] `yaml:"fallback,omitempty"`
+	MainWorkflow     string                      `yaml:"main-workflow,omitempty"`
+	FallbackWorkflow string                      `yaml:"fallback-workflow,omitempty"`
+	AlwaysStandby    bool                        `yaml:"always-standby,omitempty"`
+	WaitTime         utils.Duration              `yaml:"wait-time,omitempty"`
+}
+
+type parallelResult struct {
+	w          adapter.Workflow
+	dnsCtx     *adapter.DNSContext
+	returnMode adapter.ReturnMode
+}
+
+type Parallel struct {
+	workflowTags []string
+	workflows    []adapter.Workflow
+}
+
+type ParallelOptions struct {
+	Workflows utils.Listable[string] `yaml:"workflows,omitempty"`
 }

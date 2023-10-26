@@ -18,26 +18,26 @@ type RuleMatchOr struct {
 	Execs     []*RuleItemExec
 }
 
-type _RuleMatchOr struct {
+type RuleMatchOrOptions struct {
 	MatchOrs  []yaml.Node `yaml:"match-or,omitempty"`
 	ElseExecs []yaml.Node `yaml:"else-exec,omitempty"`
 	Execs     []yaml.Node `yaml:"exec,omitempty"`
 }
 
-func (o *RuleMatchOr) UnmarshalYAML(unmarshal func(any) error) error {
-	var _o _RuleMatchOr
-	err := unmarshal(&_o)
+func (r *RuleMatchOr) UnmarshalYAML(unmarshal func(any) error) error {
+	var o RuleMatchOrOptions
+	err := unmarshal(&o)
 	if err != nil {
 		return err
 	}
-	if len(_o.MatchOrs) == 0 {
+	if len(o.MatchOrs) == 0 {
 		return fmt.Errorf("missing match-or")
 	}
-	if len(_o.Execs) == 0 && len(_o.ElseExecs) == 0 {
+	if len(o.Execs) == 0 && len(o.ElseExecs) == 0 {
 		return fmt.Errorf("missing exec or(and) else-exec")
 	}
-	matchOrs := make([]*RuleItemMatch, 0, len(_o.MatchOrs))
-	for i, node := range _o.MatchOrs {
+	matchOrs := make([]*RuleItemMatch, 0, len(o.MatchOrs))
+	for i, node := range o.MatchOrs {
 		if node.IsZero() {
 			return fmt.Errorf("invalid match-or[%d]: empty", i)
 		}
@@ -48,10 +48,10 @@ func (o *RuleMatchOr) UnmarshalYAML(unmarshal func(any) error) error {
 		}
 		matchOrs = append(matchOrs, &m)
 	}
-	o.MatchOrs = matchOrs
-	if len(_o.ElseExecs) > 0 {
-		elseExecs := make([]*RuleItemExec, 0, len(_o.ElseExecs))
-		for i, node := range _o.ElseExecs {
+	r.MatchOrs = matchOrs
+	if len(o.ElseExecs) > 0 {
+		elseExecs := make([]*RuleItemExec, 0, len(o.ElseExecs))
+		for i, node := range o.ElseExecs {
 			if node.IsZero() {
 				return fmt.Errorf("invalid else-exec[%d]: empty", i)
 			}
@@ -62,11 +62,11 @@ func (o *RuleMatchOr) UnmarshalYAML(unmarshal func(any) error) error {
 			}
 			elseExecs = append(elseExecs, &e)
 		}
-		o.ElseExecs = elseExecs
+		r.ElseExecs = elseExecs
 	}
-	if len(_o.Execs) > 0 {
-		execs := make([]*RuleItemExec, 0, len(_o.Execs))
-		for i, node := range _o.Execs {
+	if len(o.Execs) > 0 {
+		execs := make([]*RuleItemExec, 0, len(o.Execs))
+		for i, node := range o.Execs {
 			if node.IsZero() {
 				return fmt.Errorf("invalid exec[%d]: empty", i)
 			}
@@ -77,7 +77,7 @@ func (o *RuleMatchOr) UnmarshalYAML(unmarshal func(any) error) error {
 			}
 			execs = append(execs, &e)
 		}
-		o.Execs = execs
+		r.Execs = execs
 	}
 	return nil
 }
