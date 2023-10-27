@@ -14,18 +14,48 @@ import (
 
 var _ itemExecutorRule = (*itemExecutorUpstreamRule)(nil)
 
+const (
+	upstreamStrategyPreferIPv4 = "prefer-ipv4"
+	upstreamStrategyPreferIPv6 = "prefer-ipv6"
+)
+
 type itemExecutorUpstreamRule struct {
 	upstreamTag string
 	upstream    adapter.Upstream
+	strategy    string
+}
+
+type itemExecutorUpstreamRuleOptions struct {
+	Tag      string `yaml:"tag"`
+	Strategy string `yaml:"strategy"`
 }
 
 func (r *itemExecutorUpstreamRule) UnmarshalYAML(value *yaml.Node) error {
 	var u string
 	err := value.Decode(&u)
-	if err != nil {
-		return fmt.Errorf("upstream: %w", err)
+	if err == nil {
+		r.upstreamTag = u
+		return nil
 	}
-	r.upstreamTag = u
+	var o itemExecutorUpstreamRuleOptions
+	err2 := value.Decode(&o)
+	if err2 != nil {
+		return fmt.Errorf("upstream: %w | %w", err, err2)
+	}
+	if o.Tag == "" {
+		return fmt.Errorf("upstream: missing tag")
+	}
+	r.upstreamTag = o.Tag
+	switch o.Strategy {
+	case "":
+		return fmt.Errorf("upstream: missing strategy")
+	case upstreamStrategyPreferIPv4, "a", "A", "4", "IPv4", "IP4", "ip4", "ipv4":
+		r.strategy = upstreamStrategyPreferIPv4
+	case upstreamStrategyPreferIPv6, "aaaa", "AAAA", "6", "IPv6", "IP6", "ip6", "ipv6":
+		r.strategy = upstreamStrategyPreferIPv6
+	default:
+		return fmt.Errorf("upstream: invalid strategy: %s", o.Strategy)
+	}
 	return nil
 }
 
@@ -45,87 +75,104 @@ func (r *itemExecutorUpstreamRule) exec(ctx context.Context, core adapter.Core, 
 		logger.DebugfContext(ctx, "upstream: request message is nil")
 		return adapter.ReturnModeContinue, nil
 	}
-	exchangeHooks := dnsCtx.ExchangeHooks()
-	defer dnsCtx.FlushExchangeHooks()
-	for i, exchangeHook := range exchangeHooks {
-		logger.DebugfContext(ctx, "upstream: exchange hook [%d]: before hook run", i)
-		returnMode, err := exchangeHook.BeforeExchange(ctx, dnsCtx, reqMsg)
+	question := reqMsg.Question
+	if len(question) == 0 {
+		logger.DebugfContext(ctx, "upstream: request message has no question")
+		return adapter.ReturnModeContinue, nil
+	}
+	qType := question[0].Qtype
+	if (qType != dns.TypeA && qType != dns.TypeAAAA) || r.strategy == "" || (qType == dns.TypeA && r.strategy == upstreamStrategyPreferIPv4) || (qType == dns.TypeAAAA && r.strategy == upstreamStrategyPreferIPv6) {
+		respMsg, err := r.upstream.Exchange(ctx, reqMsg)
 		if err != nil {
-			logger.DebugfContext(ctx, "upstream: exchange hook [%d]: before hook run failed: %v", i, err)
+			logger.DebugfContext(ctx, "upstream: upstream [%s] exchange failed: %v", r.upstream.Tag(), err)
 			return adapter.ReturnModeUnknown, err
 		}
-		if returnMode != adapter.ReturnModeContinue {
-			logger.DebugfContext(ctx, "upstream: exchange hook [%d]: before hook run: %s", i, returnMode.String())
-			return returnMode, nil
+		dnsCtx.SetRespMsg(respMsg)
+		dnsCtx.SetRespUpstreamTag(r.upstream.Tag())
+		return adapter.ReturnModeContinue, nil
+	}
+	var extraReqMsg *dns.Msg
+	if qType == dns.TypeA {
+		extraReqMsg = &dns.Msg{}
+		extraReqMsg.SetQuestion(question[0].Name, dns.TypeAAAA)
+	}
+	if qType == dns.TypeAAAA {
+		extraReqMsg = &dns.Msg{}
+		extraReqMsg.SetQuestion(question[0].Name, dns.TypeA)
+	}
+	ch := utils.NewSafeChan[exchangeResult](2)
+	defer ch.Close()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	for i := 0; i < 2; i++ {
+		var req *dns.Msg
+		if i == 0 {
+			req = reqMsg
+		} else {
+			req = extraReqMsg
+		}
+		go func(ctx context.Context, ch *utils.SafeChan[exchangeResult], req *dns.Msg) {
+			defer ch.Close()
+			respMsg, err := r.upstream.Exchange(ctx, req)
+			if err != nil {
+				logger.DebugfContext(ctx, "upstream: upstream [%s] exchange failed: %v", r.upstream.Tag(), err)
+				select {
+				case ch.SendChan() <- exchangeResult{req: req, isErr: true}:
+				default:
+				}
+			} else {
+				select {
+				case ch.SendChan() <- exchangeResult{req: req, resp: respMsg}:
+				default:
+				}
+			}
+		}(ctx, ch.Clone(), req)
+	}
+	var (
+		respMsg      *dns.Msg
+		extraRespMsg *dns.Msg
+	)
+	for i := 0; i < 2; i++ {
+		select {
+		case result := <-ch.ReceiveChan():
+			if result.isErr && result.req == reqMsg {
+				return adapter.ReturnModeUnknown, fmt.Errorf("upstream: upstream [%s] exchange failed", r.upstream.Tag())
+			}
+			if result.req == reqMsg {
+				respMsg = result.resp
+			} else {
+				extraRespMsg = result.resp
+			}
+		case <-ctx.Done():
+			logger.DebugfContext(ctx, "upstream: context done")
+			return adapter.ReturnModeUnknown, ctx.Err()
 		}
 	}
-	respMsg, err := r.upstream.Exchange(ctx, reqMsg)
-	if err != nil {
-		logger.DebugfContext(ctx, "upstream: upstream [%s] exchange failed: %v", r.upstream.Tag(), err)
-		return adapter.ReturnModeUnknown, err
+	if extraRespMsg == nil {
+		return adapter.ReturnModeUnknown, fmt.Errorf("upstream: upstream [%s] prefer extra request exchange failed", r.upstream.Tag())
+	}
+	var tag bool
+	for _, rr := range extraRespMsg.Answer {
+		if rr.Header().Rrtype == qType {
+			tag = true
+			break
+		}
+	}
+	if !tag {
+		logger.DebugfContext(ctx, "upstream: qType: %s, strategy: %s", dns.TypeToString[qType], r.strategy)
+	} else {
+		logger.DebugfContext(ctx, "upstream: qType: %s, but strategy: %s, drop response and generate empty response", dns.TypeToString[qType], r.strategy)
+		respMsg = &dns.Msg{}
+		respMsg.SetReply(reqMsg)
+		respMsg.Ns = []dns.RR{utils.FakeSOA(question[0].Name)}
 	}
 	dnsCtx.SetRespMsg(respMsg)
 	dnsCtx.SetRespUpstreamTag(r.upstream.Tag())
-	extraExchanges := dnsCtx.ExtraExchanges()
-	if len(extraExchanges) > 0 {
-		ch := utils.NewSafeChan[exchangeResult](len(extraExchanges))
-		defer ch.Close()
-		ctx, cancel := context.WithCancel(ctx)
-		defer cancel()
-		for i, extraExchange := range extraExchanges {
-			go func(ch *utils.SafeChan[exchangeResult], index int, reqMsg *dns.Msg) {
-				respMsg, err := r.upstream.Exchange(ctx, reqMsg)
-				if err != nil {
-					select {
-					case ch.SendChan() <- exchangeResult{
-						index: index,
-						req:   reqMsg,
-						resp:  nil,
-						err:   err,
-					}:
-					case <-ctx.Done():
-					}
-				} else {
-					select {
-					case ch.SendChan() <- exchangeResult{
-						index: index,
-						req:   reqMsg,
-						resp:  respMsg,
-					}:
-					case <-ctx.Done():
-					}
-				}
-			}(ch.Clone(), i, extraExchange.Req)
-		}
-		for i := 0; i < len(extraExchanges); i++ {
-			select {
-			case res := <-ch.ReceiveChan():
-				if res.err == nil {
-					extraExchanges[res.index].Resp = res.resp
-				}
-			case <-ctx.Done():
-			}
-		}
-		dnsCtx.SetExtraExchanges(extraExchanges)
-	}
-	for i, exchangeHook := range exchangeHooks {
-		logger.DebugfContext(ctx, "upstream: exchange hook [%d]: after hook run", i)
-		returnMode, err := exchangeHook.AfterExchange(ctx, dnsCtx, reqMsg, respMsg)
-		if err != nil {
-			logger.DebugfContext(ctx, "upstream: exchange hook [%d]: after hook run failed: %v", i, err)
-			return adapter.ReturnModeUnknown, err
-		}
-		if returnMode != adapter.ReturnModeContinue {
-			logger.DebugfContext(ctx, "upstream: exchange hook [%d]: after hook run: %s", i, returnMode.String())
-			return returnMode, nil
-		}
-	}
 	return adapter.ReturnModeContinue, nil
 }
 
 type exchangeResult struct {
-	index int
 	req   *dns.Msg
 	resp  *dns.Msg
-	err   error
+	isErr bool
 }

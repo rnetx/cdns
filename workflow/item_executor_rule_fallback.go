@@ -21,7 +21,6 @@ type itemExecutorFallbackRule struct {
 	mainWorkflow        adapter.Workflow
 	fallbackWorkflowTag string
 	fallbackWorkflow    adapter.Workflow
-	alwaysStandby       bool
 	waitTime            time.Duration
 }
 
@@ -30,7 +29,6 @@ type itemExecutorFallbackRuleOptions struct {
 	Fallback         utils.Listable[RuleOptions] `yaml:"fallback,omitempty"`
 	MainWorkflow     string                      `yaml:"main-workflow,omitempty"`
 	FallbackWorkflow string                      `yaml:"fallback-workflow,omitempty"`
-	AlwaysStandby    bool                        `yaml:"always-standby,omitempty"`
 	WaitTime         utils.Duration              `yaml:"wait-time,omitempty"`
 }
 
@@ -70,13 +68,7 @@ func (r *itemExecutorFallbackRule) UnmarshalYAML(value *yaml.Node) error {
 	if fallbackTag != 1 {
 		return fmt.Errorf("fallback: fallback and fallback-workflow must be set one")
 	}
-	r.alwaysStandby = o.AlwaysStandby
-	if o.WaitTime > 0 {
-		r.waitTime = time.Duration(o.WaitTime)
-		if r.alwaysStandby {
-			return fmt.Errorf("fallback: always-standby and wait-time must be set one")
-		}
-	}
+	r.waitTime = time.Duration(o.WaitTime)
 	return nil
 }
 
@@ -101,7 +93,7 @@ func (r *itemExecutorFallbackRule) check(ctx context.Context, core adapter.Core)
 }
 
 func (r *itemExecutorFallbackRule) exec(ctx context.Context, core adapter.Core, logger log.Logger, dnsCtx *adapter.DNSContext) (adapter.ReturnMode, error) {
-	ch := utils.NewSafeChan[fallbackResult](1)
+	ch := utils.NewSafeChan[fallbackResult](2)
 	defer ch.Close()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -109,7 +101,7 @@ func (r *itemExecutorFallbackRule) exec(ctx context.Context, core adapter.Core, 
 		waitFallbackCtx  context.Context
 		waitFallbackFunc context.CancelFunc
 	)
-	if !r.alwaysStandby && r.waitTime > 0 {
+	if r.waitTime > 0 {
 		waitFallbackCtx, waitFallbackFunc = context.WithCancel(ctx)
 		defer waitFallbackFunc()
 	}
@@ -129,6 +121,12 @@ func (r *itemExecutorFallbackRule) exec(ctx context.Context, core adapter.Core, 
 			returnMode, err := w.Exec(adapter.SaveLogContext(ctx, dnsCtx), dnsCtx)
 			if err != nil {
 				logger.DebugfContext(ctx, "fallback: main workflow [%s] exec failed: %v", w.Tag(), err)
+				select {
+				case ch.SendChan() <- fallbackResult{
+					err: err,
+				}:
+				default:
+				}
 			} else {
 				logger.DebugfContext(ctx, "fallback: main workflow [%s] exec success", w.Tag())
 				select {
@@ -167,6 +165,12 @@ func (r *itemExecutorFallbackRule) exec(ctx context.Context, core adapter.Core, 
 				returnMode, err = r.Exec(rCtx, core, logger, dnsCtx)
 				if err != nil {
 					logger.DebugfContext(ctx, "fallback: main rule[%d] exec failed: %v", i, err)
+					select {
+					case ch.SendChan() <- fallbackResult{
+						err: err,
+					}:
+					default:
+					}
 					return
 				}
 				if returnMode != adapter.ReturnModeContinue {
@@ -201,28 +205,36 @@ func (r *itemExecutorFallbackRule) exec(ctx context.Context, core adapter.Core, 
 			dnsCtx *adapter.DNSContext,
 			logger log.Logger,
 			w adapter.Workflow,
-			alwaysStandby bool,
-			waitTime time.Duration,
 			waitFallbackCtx context.Context,
 		) {
 			defer ch.Close()
 			logger.DebugfContext(ctx, "fallback: fallback workflow [%s] exec, id: %d", w.Tag(), dnsCtx.ID())
-			if !alwaysStandby && waitTime > 0 {
+			if waitFallbackCtx != nil {
 				logger.DebugfContext(ctx, "fallback: fallback workflow [%s] waiting...", w.Tag())
+				<-waitFallbackCtx.Done()
 				select {
-				case <-waitFallbackCtx.Done():
+				case <-ctx.Done():
 					select {
-					case <-ctx.Done():
-						return
+					case ch.SendChan() <- fallbackResult{
+						err:        ctx.Err(),
+						isFallback: true,
+					}:
 					default:
 					}
-				case <-ctx.Done():
 					return
+				default:
 				}
 			}
 			returnMode, err := w.Exec(adapter.SaveLogContext(ctx, dnsCtx), dnsCtx)
 			if err != nil {
 				logger.DebugfContext(ctx, "fallback: fallback workflow [%s] exec failed: %v", w.Tag(), err)
+				select {
+				case ch.SendChan() <- fallbackResult{
+					err:        err,
+					isFallback: true,
+				}:
+				default:
+				}
 			} else {
 				logger.DebugfContext(ctx, "fallback: fallback workflow [%s] exec success", w.Tag())
 				select {
@@ -240,8 +252,6 @@ func (r *itemExecutorFallbackRule) exec(ctx context.Context, core adapter.Core, 
 			fallbackDNSCtx,
 			logger,
 			r.fallbackWorkflow,
-			r.alwaysStandby,
-			r.waitTime,
 			waitFallbackCtx,
 		)
 	} else {
@@ -252,23 +262,24 @@ func (r *itemExecutorFallbackRule) exec(ctx context.Context, core adapter.Core, 
 			core adapter.Core,
 			logger log.Logger,
 			rules []Rule,
-			alwaysStandby bool,
-			waitTime time.Duration,
 			waitFallbackCtx context.Context,
 		) {
 			defer ch.Close()
 			logger.DebugfContext(ctx, "fallback: fallback rules exec, id: %d", dnsCtx.ID())
-			if !alwaysStandby && waitTime > 0 {
+			if waitFallbackCtx != nil {
 				logger.DebugContext(ctx, "fallback: fallback rules waiting...")
+				<-waitFallbackCtx.Done()
 				select {
-				case <-waitFallbackCtx.Done():
+				case <-ctx.Done():
 					select {
-					case <-ctx.Done():
-						return
+					case ch.SendChan() <- fallbackResult{
+						err:        ctx.Err(),
+						isFallback: true,
+					}:
 					default:
 					}
-				case <-ctx.Done():
 					return
+				default:
 				}
 			}
 			var (
@@ -281,6 +292,13 @@ func (r *itemExecutorFallbackRule) exec(ctx context.Context, core adapter.Core, 
 				returnMode, err = r.Exec(rCtx, core, logger, dnsCtx)
 				if err != nil {
 					logger.DebugfContext(ctx, "fallback: fallback rule[%d] exec failed: %v", i, err)
+					select {
+					case ch.SendChan() <- fallbackResult{
+						err:        err,
+						isFallback: true,
+					}:
+					default:
+					}
 					return
 				}
 				if returnMode != adapter.ReturnModeContinue {
@@ -304,31 +322,50 @@ func (r *itemExecutorFallbackRule) exec(ctx context.Context, core adapter.Core, 
 			core,
 			logger,
 			r.fallback,
-			r.alwaysStandby,
-			r.waitTime,
 			waitFallbackCtx,
 		)
 	}
-	select {
-	case result := <-ch.ReceiveChan():
-		if !result.isFallback {
-			logger.DebugfContext(ctx, "fallback: main exec success: %s", result.returnMode.String())
-		} else {
-			logger.DebugfContext(ctx, "fallback: fallback exec success: %s", result.returnMode.String())
+	var (
+		mainErr        error
+		fallbackResult fallbackResult
+	)
+	for i := 0; i < 2; i++ {
+		select {
+		case result := <-ch.ReceiveChan():
+			if !result.isFallback && result.err == nil {
+				logger.DebugfContext(ctx, "fallback: main exec success: %s", result.returnMode.String())
+				oldID := dnsCtx.ID()
+				*dnsCtx = *result.dnsCtx
+				dnsCtx.SetID(oldID)
+				dnsCtx.FlushColor()
+				return result.returnMode, nil
+			}
+			if !result.isFallback {
+				mainErr = result.err
+			} else {
+				fallbackResult = result
+			}
+		case <-ctx.Done():
+			logger.DebugfContext(ctx, "fallback: timeout")
+			return adapter.ReturnModeUnknown, ctx.Err()
 		}
+	}
+	if fallbackResult.err == nil {
+		logger.DebugfContext(ctx, "fallback: main exec failed: %s | fallback exec success: %s", mainErr, fallbackResult.returnMode.String())
 		oldID := dnsCtx.ID()
-		*dnsCtx = *result.dnsCtx
+		*dnsCtx = *fallbackResult.dnsCtx
 		dnsCtx.SetID(oldID)
 		dnsCtx.FlushColor()
-		return result.returnMode, nil
-	case <-ctx.Done():
-		logger.DebugfContext(ctx, "fallback: timeout")
-		return adapter.ReturnModeUnknown, ctx.Err()
+		return fallbackResult.returnMode, nil
 	}
+	err := fmt.Errorf("fallback: main exec failed: %s | fallback exec failed: %s", mainErr, fallbackResult.err)
+	logger.ErrorContext(ctx, err)
+	return adapter.ReturnModeUnknown, err
 }
 
 type fallbackResult struct {
 	isFallback bool
 	dnsCtx     *adapter.DNSContext
 	returnMode adapter.ReturnMode
+	err        error
 }

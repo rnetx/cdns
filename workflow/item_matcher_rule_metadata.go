@@ -35,20 +35,13 @@ func (r *itemMatcherMetadataRule) check(_ context.Context, _ adapter.Core) error
 
 func (r *itemMatcherMetadataRule) match(ctx context.Context, core adapter.Core, logger log.Logger, dnsCtx *adapter.DNSContext) (bool, error) {
 	metadata := dnsCtx.Metadata()
-	match := true
 	for k1, v1 := range r.metadata {
 		v2, ok := metadata[k1]
-		if !ok || v2 != v1 {
-			logger.DebugfContext(ctx, "metadata: no match metadata: %s => %s, value: %s", k1, v1, v2)
-			match = false
-			break
+		if ok || v2 == v1 {
+			logger.DebugfContext(ctx, "metadata: match metadata: %s => %s", k1, v1)
+			return true, nil
 		}
 	}
-	if match {
-		logger.DebugContext(ctx, "metadata: match metadata")
-		return true, nil
-	} else {
-		logger.DebugContext(ctx, "metadata: no match metadata")
-		return false, nil
-	}
+	logger.DebugContext(ctx, "metadata: no match metadata")
+	return false, nil
 }

@@ -44,6 +44,10 @@ func (r *itemExecutorReturnRule) UnmarshalYAML(value *yaml.Node) error {
 		default:
 			return fmt.Errorf("return: invalid return: %s", rr)
 		}
+	case bool:
+		if rr {
+			r._return = "all"
+		}
 	default:
 		return fmt.Errorf("return: invalid return: %v", rr)
 	}
@@ -75,6 +79,8 @@ func (r *itemExecutorReturnRule) exec(ctx context.Context, core adapter.Core, lo
 	case "refused":
 		logger.DebugContext(ctx, "return: return refused")
 		rcode = dns.RcodeRefused
+	case "":
+		return adapter.ReturnModeContinue, nil
 	}
 	var name string
 	question := dnsCtx.ReqMsg().Question

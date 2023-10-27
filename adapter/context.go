@@ -56,9 +56,6 @@ type DNSContext struct {
 	respUpstreamTag string
 	mark            uint64
 	metadata        map[string]string
-	//
-	extraExchanges []ExtraExchange
-	exchangeHooks  []ExchangeHook
 }
 
 func NewDNSContext(ctx context.Context, listener string, clientIP netip.Addr, req *dns.Msg) *DNSContext {
@@ -124,24 +121,6 @@ func (c *DNSContext) Clone() *DNSContext {
 			newDNSContext.metadata[k] = v
 		}
 	}
-	if len(c.extraExchanges) > 0 {
-		newDNSContext.extraExchanges = make([]ExtraExchange, 0, len(c.extraExchanges))
-		for _, extraExchange := range c.extraExchanges {
-			newExtraExchange := &ExtraExchange{
-				Req: extraExchange.Req.Copy(),
-			}
-			if extraExchange.Resp != nil {
-				newExtraExchange.Resp = extraExchange.Resp.Copy()
-			}
-			newDNSContext.extraExchanges = append(newDNSContext.extraExchanges, *newExtraExchange)
-		}
-	}
-	if len(c.exchangeHooks) > 0 {
-		newDNSContext.exchangeHooks = make([]ExchangeHook, 0, len(c.exchangeHooks))
-		for _, hook := range c.exchangeHooks {
-			newDNSContext.exchangeHooks = append(newDNSContext.exchangeHooks, hook.Clone())
-		}
-	}
 	return newDNSContext
 }
 
@@ -186,41 +165,4 @@ func (c *DNSContext) Metadata() map[string]string {
 		c.metadata = make(map[string]string)
 	}
 	return c.metadata
-}
-
-type ExtraExchange struct {
-	Req  *dns.Msg
-	Resp *dns.Msg
-}
-
-func (c *DNSContext) ExtraExchanges() []ExtraExchange {
-	return c.extraExchanges
-}
-
-func (c *DNSContext) SetExtraExchanges(extraExchanges []ExtraExchange) {
-	c.extraExchanges = extraExchanges
-}
-
-func (c *DNSContext) AddExtraExchange(req *dns.Msg) {
-	c.extraExchanges = append(c.extraExchanges, ExtraExchange{
-		Req: req,
-	})
-}
-
-func (c *DNSContext) FlushExchangeHooks() {
-	newExchangeHooks := make([]ExchangeHook, 0, len(c.exchangeHooks))
-	for _, hook := range c.exchangeHooks {
-		if !hook.IsOnce() {
-			newExchangeHooks = append(newExchangeHooks, hook)
-		}
-	}
-	c.exchangeHooks = newExchangeHooks
-}
-
-func (c *DNSContext) ExchangeHooks() []ExchangeHook {
-	return c.exchangeHooks
-}
-
-func (c *DNSContext) AddExchangeHook(hook ExchangeHook) {
-	c.exchangeHooks = append(c.exchangeHooks, hook)
 }
