@@ -1,4 +1,4 @@
-# Listener - TCP 监听器
+# TCP
 
 ```yaml
 listeners:

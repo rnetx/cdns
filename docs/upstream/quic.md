@@ -1,4 +1,4 @@
-# Upstream - QUIC 上游服务器
+# QUIC
 
 ```yaml
 upstreams:

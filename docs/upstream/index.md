@@ -4,13 +4,13 @@
 
 目前支持以下上游服务器：
 
-- UDP
-- TCP
-- TLS (DoT | DNS Over TLS)
-- HTTPS(3) (DoH | DoH3 | DNS Over HTTPS | DNS Over HTTP/3)
-- QUIC (DoQ | DNS Over QUIC)
+- [UDP](udp)
+- [TCP](tcp)
+- [TLS (DoT | DNS Over TLS)](tls)
+- [HTTPS(3) (DoH | DoH3 | DNS Over HTTPS | DNS Over HTTP/3)](https)
+- [QUIC (DoQ | DNS Over QUIC)](quic)
 
-- Parallel
-- Random
-- QueryTest
-- Hosts
+- [Parallel](parallel)
+- [Random](random)
+- [QueryTest](querytest)
+- [Hosts](hosts)

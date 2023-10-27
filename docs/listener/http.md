@@ -1,4 +1,4 @@
-# Listener - HTTP(S|3) 监听器
+# HTTP(S|3)
 
 ```yaml
 listeners:

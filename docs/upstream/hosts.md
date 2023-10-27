@@ -1,4 +1,4 @@
-# Upstream - Hosts 上游服务器
+# Hosts
 
 根据规则返回指定 IPv4 / IPv6 地址，仅支持 (A | AAAA) 请求。没有规则匹配的请求或者非 (A | AAAA) 请求将发送到 fallback 上游服务器
 

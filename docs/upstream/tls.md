@@ -1,4 +1,4 @@
-# Upstream - TLS 上游服务器
+# TLS
 
 ```yaml
 upstreams:

@@ -1,4 +1,4 @@
-# Upstream - TCP 上游服务器
+# TCP
 
 ```yaml
 upstreams:

@@ -1,4 +1,4 @@
-# Upstream - HTTPS(3) 上游服务器
+# HTTPS(3)
 
 ```yaml
 upstreams:

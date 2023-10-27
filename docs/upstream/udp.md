@@ -1,4 +1,4 @@
-# Upstream - UDP 上游服务器
+# UDP
 
 ```yaml
 upstreams:

@@ -27,7 +27,7 @@ workflows:
 ```
 match-and:                 match-or:                 exec:
     array[匹配器]             array[匹配器]              array[执行器]
-else:                     else:               
+exec:                     exec:               
     array[执行器]             array[执行器]    
 else-exec:                else-exec:          
     array[执行器]             array[执行器]   

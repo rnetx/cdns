@@ -1,4 +1,4 @@
-# Upstream - QueryTest 上游服务器
+# QueryTest
 
 测试所有上游服务器，并选择延迟最低的上游服务器
 

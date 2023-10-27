@@ -1,4 +1,4 @@
-# Upstream - Random 上游服务器
+# Random
 
 随机将请求发送到上游服务器
 

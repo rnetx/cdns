@@ -4,8 +4,8 @@
 
 目前支持以下监听器：
 
-- UDP
-- TCP
-- TLS (DoT | DNS Over TLS)
-- HTTP(S|3) (DoH | DoH3 | DNS Over HTTPS | DNS Over HTTP/3)
-- QUIC (DoQ | DNS Over QUIC)
+- [UDP](udp)
+- [TCP](tcp)
+- [TLS (DoT | DNS Over TLS)](tls)
+- [HTTP(S|3) (DoH | DoH3 | DNS Over HTTPS | DNS Over HTTP/3)](http)
+- [QUIC (DoQ | DNS Over QUIC)](quic)

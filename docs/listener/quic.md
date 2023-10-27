@@ -1,4 +1,4 @@
-# Listener - QUIC 监听器
+# QUIC
 
 ```yaml
 listeners:

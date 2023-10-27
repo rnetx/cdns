@@ -1,4 +1,4 @@
-# Upstream - Parallel 上游服务器
+# Parallel
 
 请求并发发送到上游服务器，取最先返回的结果
 

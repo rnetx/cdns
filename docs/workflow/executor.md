@@ -2,19 +2,19 @@
 
 下面是一些 ```Workflow``` 预定义的执行器
 
-- ```Mark```
-- ```Metadata```
-- ```Plugin```
-- ```Upstream```
-- ```Jump-To```
-- ```Go-To```
-- ```Workflow-Rules```
-- ```Fallback```
-- ```Parallel```
-- ```Set-TTL```
-- ```Set-Resp-IP```
-- ```Clean```
-- ```Return```
+- [```Mark```](#mark)
+- [```Metadata```](#metadata)
+- [```Plugin```](#plugin)
+- [```Upstream```](#upstream)
+- [```Jump-To```](#jump-to)
+- [```Go-To```](#go-to)
+- [```Workflow-Rules```](#workflow-rules)
+- [```Fallback```](#fallback)
+- [```Parallel```](#parallel)
+- [```Set-TTL```](#set-ttl)
+- [```Set-Resp-IP```](#set-resp-ip)
+- [```Clean```](#clean)
+- [```Return```](#return)
 
 ### ```Mark```
 
@@ -82,10 +82,10 @@ workflows:
             ...
           exec:
             - upstream: upstream-default
-            - upstream:
-                tag: upstream-default
-                strategy: prefer-ipv4 # 若请求为 AAAA ，则同时请求 A ，若 A 返回有效响应，则忽略 AAAA 的响应，生成空响应 (Rcode: Success) (SOA)
-                # strategy: prefer-ipv6 # 若请求为 A ，则同时请求 AAAA ，若 AAAA 返回有效响应，则忽略 A 的响应，生成空响应 (Rcode: Success) (SOA)
+            # - upstream:
+            #     tag: upstream-default
+            #     strategy: prefer-ipv4 # 若请求为 AAAA ，则同时请求 A ，若 A 返回有效响应，则忽略 AAAA 的响应，生成空响应 (Rcode: Success) (SOA)
+            #     # strategy: prefer-ipv6 # 若请求为 A ，则同时请求 AAAA ，若 AAAA 返回有效响应，则忽略 A 的响应，生成空响应 (Rcode: Success) (SOA)
 ```
 
 ### ```Jump-To```
