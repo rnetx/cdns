@@ -138,6 +138,7 @@ func (l *UDPListener) serve(buf []byte, addr netip.AddrPort) {
 	}
 	resp := l.Handle(l.ctx, req, addr)
 	if resp != nil {
+		resp.Truncate(getUDPSize(req))
 		raw, err := resp.Pack()
 		if err != nil {
 			l.logger.Debugf("pack dns message failed: client address: %s, error: %s", addr.String(), err)
@@ -152,4 +153,16 @@ func (l *UDPListener) serve(buf []byte, addr netip.AddrPort) {
 
 func (l *UDPListener) Handle(ctx context.Context, req *dns.Msg, clientAddr netip.AddrPort) *dns.Msg {
 	return listenerHandle(ctx, l.listen, l.logger, l.workflow, req, clientAddr)
+}
+
+// from mosdns(https://github.com/IrineSistiana/mosdns), thank for @IrineSistiana
+func getUDPSize(m *dns.Msg) int {
+	var s uint16
+	if opt := m.IsEdns0(); opt != nil {
+		s = opt.UDPSize()
+	}
+	if s < dns.MinMsgSize {
+		s = dns.MinMsgSize
+	}
+	return int(s)
 }

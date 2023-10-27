@@ -201,7 +201,7 @@ func (u *QUICUpstream) newUDPPacketConn(ctx context.Context) (net.PacketConn, ne
 			if err != nil {
 				return nil, nil, fmt.Errorf("lookup domain failed: %s, error: %s", domain, err)
 			}
-			conn, ip, err := network.ListenParallel(ctx, u.dialer, ips, u.address.Port())
+			conn, ip, err := network.ListenPacketParallel(ctx, u.dialer, ips, u.address.Port())
 			return conn, &net.UDPAddr{IP: ip.AsSlice(), Port: int(u.address.Port())}, err
 		}
 	}

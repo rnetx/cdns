@@ -28,6 +28,8 @@ type Options struct {
 	HTTPSOptions *HTTPSUpstreamOptions
 	QUICOptions  *QUICUpstreamOptions
 
+	HostsOptions *HostsUpstreamOptions
+
 	RandomOptions    *RandomUpstreamOptions
 	ParallelOptions  *ParallelUpstreamOptions
 	QueryTestOptions *QueryTestUpstreamOptions
@@ -62,6 +64,9 @@ func (o *Options) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	case QUICUpstreamType:
 		o.QUICOptions = &QUICUpstreamOptions{}
 		data = o.QUICOptions
+	case HostsUpstreamType:
+		o.HostsOptions = &HostsUpstreamOptions{}
+		data = o.HostsOptions
 	case RandomUpstreamType:
 		o.RandomOptions = &RandomUpstreamOptions{}
 		data = o.RandomOptions
@@ -129,8 +134,9 @@ func (g *GenericUpstream) Exchange(ctx context.Context, req *dns.Msg) (*dns.Msg,
 
 func NewUpstream(ctx context.Context, core adapter.Core, logger log.Logger, tag string, options Options) (adapter.Upstream, error) {
 	var (
-		u   adapter.Upstream
-		err error
+		u         adapter.Upstream
+		noGeneric bool
+		err       error
 	)
 	switch options.Type {
 	case UDPUpstreamType:
@@ -143,11 +149,17 @@ func NewUpstream(ctx context.Context, core adapter.Core, logger log.Logger, tag 
 		u, err = NewHTTPSUpstream(ctx, core, logger, tag, *options.HTTPSOptions)
 	case QUICUpstreamType:
 		u, err = NewQUICUpstream(ctx, core, logger, tag, *options.QUICOptions)
+	case HostsUpstreamType:
+		noGeneric = true
+		u, err = NewHostsUpstream(ctx, core, logger, tag, *options.HostsOptions)
 	case RandomUpstreamType:
+		noGeneric = true
 		u, err = NewRandomUpstream(ctx, core, logger, tag, *options.RandomOptions)
 	case ParallelUpstreamType:
+		noGeneric = true
 		u, err = NewParallelUpstream(ctx, core, logger, tag, *options.ParallelOptions)
 	case QueryTestUpstreamType:
+		noGeneric = true
 		u, err = NewQueryTestUpstream(ctx, core, logger, tag, *options.QueryTestOptions)
 	default:
 		return nil, fmt.Errorf("unknown upstream type: %s", options.Type)
@@ -155,14 +167,16 @@ func NewUpstream(ctx context.Context, core adapter.Core, logger log.Logger, tag 
 	if err != nil {
 		return nil, err
 	}
-	queryTimeout := options.QueryTimeout
-	if queryTimeout <= 0 {
-		queryTimeout = DefaultQueryTimeout
-	}
-	u = &GenericUpstream{
-		queryTimeout: queryTimeout,
-		retry:        DefaultRetry,
-		Upstream:     u,
+	if !noGeneric {
+		queryTimeout := options.QueryTimeout
+		if queryTimeout <= 0 {
+			queryTimeout = DefaultQueryTimeout
+		}
+		u = &GenericUpstream{
+			queryTimeout: queryTimeout,
+			retry:        DefaultRetry,
+			Upstream:     u,
+		}
 	}
 	return u, nil
 }

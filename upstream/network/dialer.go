@@ -40,6 +40,11 @@ type dialParallelResult struct {
 	ip   netip.Addr
 }
 
+type listenPacketParallelResult struct {
+	conn net.PacketConn
+	ip   netip.Addr
+}
+
 func DialParallel(ctx context.Context, dialer common.Dialer, network string, ips []netip.Addr, port uint16) (net.Conn, netip.Addr, error) {
 	safeChan := utils.NewSafeChan[utils.Result[dialParallelResult]](len(ips))
 	defer safeChan.Close()
@@ -79,13 +84,52 @@ func DialParallel(ctx context.Context, dialer common.Dialer, network string, ips
 	return nil, netip.Addr{}, lastErr
 }
 
-func ListenParallel(ctx context.Context, dialer common.Dialer, ips []netip.Addr, port uint16) (net.PacketConn, netip.Addr, error) {
-	// TODO: Use First IP
-	ip := ips[0]
-	socksAddr := common.NewSocksIPPort(ip, port)
-	conn, err := dialer.ListenPacket(ctx, *socksAddr)
-	if err != nil {
-		return nil, netip.Addr{}, err
+func ListenPacketParallel(ctx context.Context, dialer common.Dialer, ips []netip.Addr, port uint16) (net.PacketConn, netip.Addr, error) {
+	_, isSocks5Dialer := dialer.(*socks5.Dialer)
+	if !isSocks5Dialer {
+		// TODO: Use First IP
+		ip := ips[0]
+		socksAddr := common.NewSocksIPPort(ip, port)
+		conn, err := dialer.ListenPacket(ctx, *socksAddr)
+		if err != nil {
+			return nil, netip.Addr{}, err
+		}
+		return conn, ip, nil
 	}
-	return conn, ip, nil
+	safeChan := utils.NewSafeChan[utils.Result[listenPacketParallelResult]](len(ips))
+	defer safeChan.Close()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	for _, ip := range ips {
+		go func(safeChan *utils.SafeChan[utils.Result[listenPacketParallelResult]], ip netip.Addr) {
+			defer safeChan.Close()
+			conn, err := dialer.ListenPacket(ctx, *common.NewSocksIPPort(ip, port))
+			if err != nil {
+				select {
+				case safeChan.SendChan() <- utils.Result[listenPacketParallelResult]{Error: err}:
+				case <-ctx.Done():
+				}
+			} else {
+				select {
+				case safeChan.SendChan() <- utils.Result[listenPacketParallelResult]{Value: listenPacketParallelResult{conn: conn, ip: ip}}:
+				case <-ctx.Done():
+				}
+			}
+		}(safeChan.Clone(), ip)
+	}
+	var lastErr error
+	for i := 0; i < len(ips); i++ {
+		select {
+		case <-ctx.Done():
+			return nil, netip.Addr{}, ctx.Err()
+		case result := <-safeChan.ReceiveChan():
+			if result.Error != nil {
+				lastErr = result.Error
+				continue
+			}
+			listenPacketResult := result.Value
+			return listenPacketResult.conn, listenPacketResult.ip, nil
+		}
+	}
+	return nil, netip.Addr{}, lastErr
 }

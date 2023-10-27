@@ -31,6 +31,7 @@ type RuleItemExecOptions struct {
 	Fallback      yaml.Node `yaml:"fallback,omitempty"`
 	Parallel      yaml.Node `yaml:"parallel,omitempty"`
 	SetTTL        yaml.Node `yaml:"set-ttl,omitempty"`
+	SetRespIP     yaml.Node `yaml:"set-resp-ip,omitempty"`
 	Clean         yaml.Node `yaml:"clean,omitempty"`
 	Return        yaml.Node `yaml:"return,omitempty"`
 }
@@ -48,13 +49,12 @@ func (r *RuleItemExec) UnmarshalYAML(unmarshal func(interface{}) error) error {
 				r.rule = &itemExecutorCleanRule{
 					clean: true,
 				}
-				return nil
 			case "return":
 				r.rule = &itemExecutorReturnRule{
 					_return: "all",
 				}
-				return nil
 			}
+			return nil
 		}
 		return err
 	}
@@ -90,6 +90,9 @@ func (r *RuleItemExec) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	case !o.SetTTL.IsZero():
 		item = &itemExecutorSetTTLRule{}
 		err = o.SetTTL.Decode(item)
+	case !o.SetRespIP.IsZero():
+		item = &itemExecutorSetRespIPRule{}
+		err = o.SetRespIP.Decode(item)
 	case !o.Clean.IsZero():
 		item = &itemExecutorCleanRule{}
 		err = o.Clean.Decode(item)

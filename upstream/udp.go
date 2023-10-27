@@ -20,13 +20,13 @@ import (
 )
 
 type UDPUpstreamOptions struct {
-	Address          string             `yaml:"address"`
-	ConnectTimeout   utils.Duration     `yaml:"connect-timeout,omitempty"`
-	IdleTimeout      utils.Duration     `yaml:"idle-timeout,omitempty"`
-	FallbackTCP      bool               `yaml:"fallback-tcp,omitempty"`
-	EnablePipeline   bool               `yaml:"enable-pipeline,omitempty"`
-	BootstrapOptions *bootstrap.Options `yaml:"bootstrap,omitempty"`
-	DialerOptions    network.Options    `yaml:",inline,omitempty"`
+	Address            string             `yaml:"address"`
+	ConnectTimeout     utils.Duration     `yaml:"connect-timeout,omitempty"`
+	IdleTimeout        utils.Duration     `yaml:"idle-timeout,omitempty"`
+	DisableFallbackTCP bool               `yaml:"disable-fallback-tcp,omitempty"`
+	EnablePipeline     bool               `yaml:"enable-pipeline,omitempty"`
+	BootstrapOptions   *bootstrap.Options `yaml:"bootstrap,omitempty"`
+	DialerOptions      network.Options    `yaml:",inline,omitempty"`
 }
 
 const DefaultUDPBufferSize = 4096
@@ -52,8 +52,8 @@ type UDPUpstream struct {
 	connectTimeout time.Duration
 	idleTimeout    time.Duration
 
-	fallbackTCP    bool
-	enablePipeline bool
+	disableFallbackTCP bool
+	enablePipeline     bool
 
 	udpConnPool     *pool.Pool[*dns.Conn]
 	tcpPipelinePool *pipeline.DNSPipelineConnPool
@@ -100,7 +100,7 @@ func NewUDPUpstream(ctx context.Context, core adapter.Core, logger log.Logger, t
 	} else {
 		u.idleTimeout = DefaultIdleTimeout
 	}
-	u.fallbackTCP = options.FallbackTCP
+	u.disableFallbackTCP = options.DisableFallbackTCP
 	u.enablePipeline = options.EnablePipeline
 	return u, nil
 }
@@ -141,7 +141,7 @@ func (u *UDPUpstream) Start() error {
 		conn.Close()
 		u.logger.Debug("udp connection closed")
 	})
-	if u.fallbackTCP {
+	if !u.disableFallbackTCP {
 		if !u.enablePipeline {
 			u.tcpConnPool = pool.NewPool(u.ctx, 0, u.idleTimeout, func(ctx context.Context) (*dns.Conn, error) {
 				conn, err := u.newTCPConn(ctx)
@@ -175,7 +175,7 @@ func (u *UDPUpstream) Close() error {
 		u.bootstrap.Close()
 	}
 	u.udpConnPool.Close()
-	if u.fallbackTCP {
+	if !u.disableFallbackTCP {
 		if !u.enablePipeline {
 			u.tcpConnPool.Close()
 		} else {
@@ -216,46 +216,40 @@ func (u *UDPUpstream) newTCPConn(ctx context.Context) (net.Conn, error) {
 }
 
 func (u *UDPUpstream) exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
-	raw, err := req.Pack()
+	// UDP
+	conn, err := u.udpConnPool.Get(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("pack request failed: %s", err)
+		return nil, fmt.Errorf("get udp connection failed: %s", err)
 	}
-	if len(raw) > 512 {
-		if !u.fallbackTCP {
-			return nil, fmt.Errorf("request too large: %d", len(raw))
-		}
-		// TCP
-		if !u.enablePipeline {
-			conn, err := u.tcpConnPool.Get(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("get tcp connection failed: %s", err)
-			}
-			deadline, ok := ctx.Deadline()
-			if !ok {
-				deadline = time.Now().Add(DefaultQueryTimeout)
-			}
-			err = conn.SetDeadline(deadline)
-			if err != nil {
-				return nil, fmt.Errorf("set tcp connection deadline failed: %s", err)
-			}
-			err = conn.WriteMsg(req)
-			if err != nil {
-				return nil, fmt.Errorf("send dns message failed: %s", err)
-			}
-			resp, err := conn.ReadMsg()
-			if err != nil {
-				return nil, fmt.Errorf("receive dns message failed: %s", err)
-			}
-			u.tcpConnPool.Put(ctx, conn)
-			return resp, nil
-		} else {
-			return u.tcpPipelinePool.Exchange(ctx, req)
-		}
-	} else {
-		// UDP
-		conn, err := u.udpConnPool.Get(ctx)
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		deadline = time.Now().Add(DefaultQueryTimeout)
+	}
+	err = conn.SetDeadline(deadline)
+	if err != nil {
+		return nil, fmt.Errorf("set udp connection deadline failed: %s", err)
+	}
+	err = conn.WriteMsg(req)
+	if err != nil {
+		return nil, fmt.Errorf("send dns message failed: %s", err)
+	}
+	resp, err := conn.ReadMsg()
+	if err != nil {
+		return nil, fmt.Errorf("receive dns message failed: %s", err)
+	}
+	u.udpConnPool.Put(ctx, conn)
+	//
+	if !resp.Truncated {
+		return resp, nil
+	}
+	// TCP
+	if u.disableFallbackTCP {
+		return nil, fmt.Errorf("request too large")
+	}
+	if !u.enablePipeline {
+		conn, err := u.tcpConnPool.Get(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("get udp connection failed: %s", err)
+			return nil, fmt.Errorf("get tcp connection failed: %s", err)
 		}
 		deadline, ok := ctx.Deadline()
 		if !ok {
@@ -263,7 +257,7 @@ func (u *UDPUpstream) exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, err
 		}
 		err = conn.SetDeadline(deadline)
 		if err != nil {
-			return nil, fmt.Errorf("set udp connection deadline failed: %s", err)
+			return nil, fmt.Errorf("set tcp connection deadline failed: %s", err)
 		}
 		err = conn.WriteMsg(req)
 		if err != nil {
@@ -273,8 +267,10 @@ func (u *UDPUpstream) exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, err
 		if err != nil {
 			return nil, fmt.Errorf("receive dns message failed: %s", err)
 		}
-		u.udpConnPool.Put(ctx, conn)
+		u.tcpConnPool.Put(ctx, conn)
 		return resp, nil
+	} else {
+		return u.tcpPipelinePool.Exchange(ctx, req)
 	}
 }
 

@@ -48,8 +48,6 @@ func (r *itemExecutorParallelRule) check(ctx context.Context, core adapter.Core)
 func (r *itemExecutorParallelRule) exec(ctx context.Context, core adapter.Core, logger log.Logger, dnsCtx *adapter.DNSContext) (adapter.ReturnMode, error) {
 	ch := utils.NewSafeChan[parallelResult](1)
 	defer ch.Close()
-	taskGroup := utils.NewTaskGroupWithContext(ctx)
-	defer taskGroup.Close()
 	for i, w := range r.workflows {
 		iDNSCtx := dnsCtx.Clone()
 		iDNSCtx.SetID(iDNSCtx.ID() + uint32(i) + 1)
@@ -57,12 +55,10 @@ func (r *itemExecutorParallelRule) exec(ctx context.Context, core adapter.Core, 
 		logger.DebugfContext(ctx, "parallel: workflow [%s] exec, id: %d", w.Tag(), iDNSCtx.ID())
 		go func(
 			ctx context.Context,
-			task *utils.Task,
 			dnsCtx *adapter.DNSContext,
 			ch *utils.SafeChan[parallelResult],
 			w adapter.Workflow,
 		) {
-			defer task.Finish()
 			defer ch.Close()
 			returnMode, err := w.Exec(adapter.SaveLogContext(ctx, dnsCtx), dnsCtx)
 			if err == nil {
@@ -74,35 +70,46 @@ func (r *itemExecutorParallelRule) exec(ctx context.Context, core adapter.Core, 
 				}:
 				default:
 				}
+			} else {
+				select {
+				case ch.SendChan() <- parallelResult{
+					w:   w,
+					err: err,
+				}:
+				default:
+				}
 			}
 		}(
 			ctx,
-			taskGroup.AddTask(),
 			iDNSCtx,
 			ch.Clone(),
 			w,
 		)
 	}
-	select {
-	case result := <-ch.ReceiveChan():
-		logger.DebugfContext(ctx, "parallel: workflow [%s] exec success: %s", result.w.Tag(), result.returnMode.String())
-		oldID := dnsCtx.ID()
-		*dnsCtx = *result.dnsCtx
-		dnsCtx.SetID(oldID)
-		dnsCtx.FlushColor()
-		return result.returnMode, nil
-	case <-ctx.Done():
-		logger.ErrorContext(ctx, "parallel: timeout")
-		return adapter.ReturnModeUnknown, ctx.Err()
-	case <-taskGroup.Wait():
-		err := fmt.Errorf("parallel: all workflow exec failed")
-		logger.ErrorContext(ctx, err)
-		return adapter.ReturnModeUnknown, err
+	for i := 0; i < len(r.workflows); i++ {
+		select {
+		case result := <-ch.ReceiveChan():
+			if result.err == nil {
+				logger.DebugfContext(ctx, "parallel: workflow [%s] exec success: %s", result.w.Tag(), result.returnMode.String())
+				oldID := dnsCtx.ID()
+				*dnsCtx = *result.dnsCtx
+				dnsCtx.SetID(oldID)
+				dnsCtx.FlushColor()
+				return result.returnMode, nil
+			}
+		case <-ctx.Done():
+			logger.ErrorContext(ctx, "parallel: timeout")
+			return adapter.ReturnModeUnknown, ctx.Err()
+		}
 	}
+	err := fmt.Errorf("parallel: all workflow exec failed")
+	logger.ErrorContext(ctx, err)
+	return adapter.ReturnModeUnknown, err
 }
 
 type parallelResult struct {
 	w          adapter.Workflow
 	dnsCtx     *adapter.DNSContext
 	returnMode adapter.ReturnMode
+	err        error
 }
