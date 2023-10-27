@@ -25,12 +25,12 @@ workflows:
 ```Workflow``` 基于逻辑处理机制，类似于 ```if-else```，```Workflow``` 定义了三种逻辑处理机制：
 
 ```
-match-and:          |   match-or:           |   exec:
-    array[匹配器]   |       array[匹配器]    |       array[执行器]
-else:               |   else:               |
-    array[执行器]   |       array[执行器]    |
-else-exec:          |   else-exec:          |
-    array[执行器]   |       array[执行器]    |
+match-and:                 match-or:                 exec:
+    array[匹配器]             array[匹配器]              array[执行器]
+else:                     else:               
+    array[执行器]             array[执行器]    
+else-exec:                else-exec:          
+    array[执行器]             array[执行器]   
 ```
 
 - ```match-and```：当**所有** ```match-and``` 中的匹配器**都满足**时，执行 ```exec``` 中的执行器，否则执行 ```else-exec``` 中的执行器

@@ -3,6 +3,7 @@ package script
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -181,6 +182,24 @@ func (s *Script) APIHandler() chi.Router {
 		Methods:     []string{http.MethodGet},
 		Description: "run script",
 		Handler:     s.runScriptHandler(),
+	})
+	builder.Add(&utils.ChiRouterBuilderItem{
+		Path:        "/result",
+		Methods:     []string{http.MethodGet},
+		Description: "get result",
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			result := s.result
+			raw, err := json.Marshal(map[string]any{
+				"result": result,
+			})
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+			} else {
+				w.WriteHeader(http.StatusOK)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(raw)
+			}
+		}),
 	})
 	return builder.Build()
 }
