@@ -161,12 +161,12 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://github.com/rnetx/cdns/workflow/item_executor/</loc>
+         <loc>https://github.com/rnetx/cdns/workflow/executor/</loc>
          <lastmod>2023-10-27</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://github.com/rnetx/cdns/workflow/item_matcher/</loc>
+         <loc>https://github.com/rnetx/cdns/workflow/matcher/</loc>
          <lastmod>2023-10-27</lastmod>
          <changefreq>daily</changefreq>
     </url>

@@ -12,10 +12,10 @@
         <meta name="author" content="yaotthaha">
       
       
-        <link rel="canonical" href="https://github.com/rnetx/cdns/workflow/item_executor/">
+        <link rel="canonical" href="https://github.com/rnetx/cdns/workflow/executor/">
       
       
-        <link rel="prev" href="../item_matcher/">
+        <link rel="prev" href="../matcher/">
       
       
         <link rel="next" href="../../plugin/matcher/">
@@ -1043,7 +1043,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../item_matcher/" class="md-nav__link">
+      <a href="../matcher/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1548,19 +1548,19 @@
 <h1 id="workflow-executor"><a class="toclink" href="#workflow-executor">Workflow - Executor 执行器</a><a class="headerlink" href="#workflow-executor" title="Permanent link">&para;</a></h1>
 <p>下面是一些 <code>Workflow</code> 预定义的执行器</p>
 <ul>
-<li><code>Mark</code></li>
-<li><code>Metadata</code></li>
-<li><code>Plugin</code></li>
-<li><code>Upstream</code></li>
-<li><code>Jump-To</code></li>
-<li><code>Go-To</code></li>
-<li><code>Workflow-Rules</code></li>
-<li><code>Fallback</code></li>
-<li><code>Parallel</code></li>
-<li><code>Set-TTL</code></li>
-<li><code>Set-Resp-IP</code></li>
-<li><code>Clean</code></li>
-<li><code>Return</code></li>
+<li><a href="#mark"><code>Mark</code></a></li>
+<li><a href="#metadata"><code>Metadata</code></a></li>
+<li><a href="#plugin"><code>Plugin</code></a></li>
+<li><a href="#upstream"><code>Upstream</code></a></li>
+<li><a href="#jump-to"><code>Jump-To</code></a></li>
+<li><a href="#go-to"><code>Go-To</code></a></li>
+<li><a href="#workflow-rules"><code>Workflow-Rules</code></a></li>
+<li><a href="#fallback"><code>Fallback</code></a></li>
+<li><a href="#parallel"><code>Parallel</code></a></li>
+<li><a href="#set-ttl"><code>Set-TTL</code></a></li>
+<li><a href="#set-resp-ip"><code>Set-Resp-IP</code></a></li>
+<li><a href="#clean"><code>Clean</code></a></li>
+<li><a href="#return"><code>Return</code></a></li>
 </ul>
 <h3 id="mark"><a class="toclink" href="#mark"><code>Mark</code></a><a class="headerlink" href="#mark" title="Permanent link">&para;</a></h3>
 <p>设置 <code>Mark</code></p>
@@ -1610,10 +1610,10 @@
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">          </span><span class="nt">exec</span><span class="p">:</span>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">upstream</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">upstream-default</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">upstream</span><span class="p">:</span>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">                </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">upstream-default</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">                </span><span class="nt">strategy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prefer-ipv4</span><span class="w"> </span><span class="c1"># 若请求为 AAAA ，则同时请求 A ，若 A 返回有效响应，则忽略 AAAA 的响应，生成空响应 (Rcode: Success) (SOA)</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">                </span><span class="c1"># strategy: prefer-ipv6 # 若请求为 A ，则同时请求 AAAA ，若 AAAA 返回有效响应，则忽略 A 的响应，生成空响应 (Rcode: Success) (SOA)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">            </span><span class="c1"># - upstream:</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">            </span><span class="c1">#     tag: upstream-default</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">            </span><span class="c1">#     strategy: prefer-ipv4 # 若请求为 AAAA ，则同时请求 A ，若 A 返回有效响应，则忽略 AAAA 的响应，生成空响应 (Rcode: Success) (SOA)</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">            </span><span class="c1">#     # strategy: prefer-ipv6 # 若请求为 A ，则同时请求 AAAA ，若 AAAA 返回有效响应，则忽略 A 的响应，生成空响应 (Rcode: Success) (SOA)</span>
 </code></pre></div>
 <h3 id="jump-to"><a class="toclink" href="#jump-to"><code>Jump-To</code></a><a class="headerlink" href="#jump-to" title="Permanent link">&para;</a></h3>
 <p>跳转到指定的 <code>Workflow</code> 处理，处理结束后返回到当前 <code>Workflow</code> 继续处理</p>
