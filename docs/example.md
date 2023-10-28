@@ -29,9 +29,10 @@ upstreams:
 
 plugin-matchers:
   - tag: geosite
-    type: sing-geosite
+    type: geosite
     args:
-      path: /etc/cdns/geosite.db # 填写 sing-geosite 位置
+      type: sing
+      path: /etc/cdns/geosite.db # 填写 geosite (sing-box) 位置
       code: gfw
 
 plugin-executors:
