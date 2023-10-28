@@ -33,8 +33,9 @@ upstreams:
 
 plugin-matchers:
   - tag: geosite
-    type: sing-geosite # https://github.com/SagerNet/sing-geosite
+    type: geosite # https://github.com/SagerNet/sing-geosite
     args:
+      type: sing
       path: /path/to/geosite.db
       code: cn
 

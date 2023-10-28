@@ -81,7 +81,7 @@ func NewGeoSite(ctx context.Context, _ adapter.Core, logger log.Logger, tag stri
 	}
 	g.path = a.Path
 	g.code = a.Code
-	return nil, nil
+	return g, nil
 }
 
 func (g *GeoSite) Tag() string {
