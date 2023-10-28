@@ -1,4 +1,4 @@
-package sing_geosite
+package sing
 
 import (
 	"encoding/binary"
@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"sync/atomic"
+
+	"github.com/rnetx/cdns/utils/domain"
 )
 
 type ReadSeekCloser interface {
@@ -19,7 +21,7 @@ type Reader struct {
 	domainLength map[string]int
 }
 
-func OpenGeoSiteReader(path string) (*Reader, []string, error) {
+func OpenReader(path string) (*Reader, []string, error) {
 	content, err := os.Open(path)
 	if err != nil {
 		return nil, nil, err
@@ -81,7 +83,7 @@ func (r *Reader) readMetadata() error {
 	return nil
 }
 
-func (r *Reader) Read(code string) ([]Item, error) {
+func (r *Reader) read(code string) ([]item, error) {
 	index, exists := r.domainIndex[code]
 	if !exists {
 		return nil, fmt.Errorf("code [%s] not exists", code)
@@ -91,10 +93,10 @@ func (r *Reader) Read(code string) ([]Item, error) {
 		return nil, err
 	}
 	counter := &readCounter{Reader: r.reader}
-	domain := make([]Item, r.domainLength[code])
+	domain := make([]item, r.domainLength[code])
 	for i := range domain {
 		var (
-			item Item
+			item item
 			err  error
 		)
 		item.Type, err = readByte(counter)
@@ -109,6 +111,14 @@ func (r *Reader) Read(code string) ([]Item, error) {
 	}
 	_, err = r.reader.Seek(int64(-index)-counter.Count(), io.SeekCurrent)
 	return domain, err
+}
+
+func (r *Reader) Read(code string) (*domain.DomainSet, error) {
+	items, err := r.read(code)
+	if err != nil {
+		return nil, err
+	}
+	return compile(items)
 }
 
 func (r *Reader) Close() error {

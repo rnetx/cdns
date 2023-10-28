@@ -190,6 +190,9 @@ func decodeRules(rules []string) (*domain.DomainSet, int, error) {
 			}
 		case strings.HasPrefix(rule, "suffix:"):
 			bRule := rule[7:]
+			if !strings.HasPrefix(bRule, ".") {
+				bRule = "." + bRule
+			}
 			if !suffixMap[bRule] {
 				suffixMap[bRule] = true
 				builder.AddSuffix(bRule)
@@ -228,8 +231,23 @@ func decodeRules(rules []string) (*domain.DomainSet, int, error) {
 				builder.AddRegexp(bRule)
 				n++
 			}
-		default:
+		case strings.Contains(rule, ":"):
 			return nil, 0, fmt.Errorf("invalid rule: %s", rule)
+		default:
+			bRule := rule
+			if !strings.HasPrefix(bRule, ".") {
+				bRule = "." + bRule
+				if !fullMap[rule] {
+					fullMap[rule] = true
+					builder.AddFull(rule)
+					n++
+				}
+			}
+			if !suffixMap[bRule] {
+				suffixMap[bRule] = true
+				builder.AddSuffix(bRule)
+				n++
+			}
 		}
 	}
 	set, err := builder.Build()

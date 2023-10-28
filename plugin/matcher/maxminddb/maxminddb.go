@@ -28,6 +28,10 @@ type Args struct {
 	Type string `json:"type"`
 }
 
+type runningArgs struct {
+	Code utils.Listable[string] `json:"code"`
+}
+
 var (
 	_ adapter.PluginMatcher = (*MaxmindDB)(nil)
 	_ adapter.Starter       = (*MaxmindDB)(nil)
@@ -105,7 +109,15 @@ func (m *MaxmindDB) LoadRunningArgs(_ context.Context, args any) (uint16, error)
 	var codes utils.Listable[string]
 	err := utils.JsonDecode(args, &codes)
 	if err != nil {
-		return 0, err
+		var a runningArgs
+		err2 := utils.JsonDecode(args, &a)
+		if err2 != nil {
+			return 0, fmt.Errorf("%w | %w", err, err2)
+		}
+		codes = a.Code
+	}
+	if len(codes) == 0 {
+		return 0, fmt.Errorf("missing code")
 	}
 	codeMap := make(map[string]struct{})
 	for _, code := range codes {

@@ -9,6 +9,7 @@ plugin-matchers:
       args:
         rule: 'full:google.com' # 匹配规则
         # rule:
+        #   - 'github.com' # 等效于 suffix:github.com
         #   - 'full:google.com'
         #   - 'suffix:google.com'
         #   - 'keyword:google'

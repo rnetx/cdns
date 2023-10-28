@@ -20,13 +20,17 @@ func NewDomainSetBuilder() *DomainSetBuilder {
 	return &DomainSetBuilder{}
 }
 
-func NewDomainSetBuildWithSize(full, suffix, keyword, regexp int) *DomainSetBuilder {
+func NewDomainSetBuilderWithSize(full, suffix, keyword, regexp int) *DomainSetBuilder {
 	return &DomainSetBuilder{
 		fulls:    make([]string, 0, full),
 		suffixs:  make([]string, 0, suffix),
 		keywords: make([]string, 0, keyword),
 		regexps:  make([]string, 0, regexp),
 	}
+}
+
+func (b *DomainSetBuilder) Len() int {
+	return len(b.fulls) + len(b.suffixs) + len(b.keywords) + len(b.regexps)
 }
 
 func (b *DomainSetBuilder) AddFull(full string) {

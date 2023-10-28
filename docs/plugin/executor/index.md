@@ -14,3 +14,9 @@ workflows:
                 tag: plugin # 执行器插件标签
                 args: ... # 运行时插件参数
 ```
+
+目前支持的匹配器插件列表：
+
+- [memcache](memcache)
+- [rediscache](rediscache)
+- [script](script)

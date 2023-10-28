@@ -1,22 +1,26 @@
-package sing_geosite
+package sing
 
-import "github.com/rnetx/cdns/utils/domain"
+import (
+	"strings"
 
-type ItemType = uint8
+	"github.com/rnetx/cdns/utils/domain"
+)
+
+type itemType = uint8
 
 const (
-	RuleTypeDomain ItemType = iota
+	RuleTypeDomain itemType = iota
 	RuleTypeDomainSuffix
 	RuleTypeDomainKeyword
 	RuleTypeDomainRegex
 )
 
-type Item struct {
-	Type  ItemType
+type item struct {
+	Type  itemType
 	Value string
 }
 
-func compile(code []Item) (*domain.DomainSet, error) {
+func compile(code []item) (*domain.DomainSet, error) {
 	var domainLength int
 	var domainSuffixLength int
 	var domainKeywordLength int
@@ -51,13 +55,17 @@ func compile(code []Item) (*domain.DomainSet, error) {
 	if domainRegexLength > 0 {
 		regexp = domainRegexLength
 	}
-	builder := domain.NewDomainSetBuildWithSize(full, suffix, keyword, regexp)
+	builder := domain.NewDomainSetBuilderWithSize(full, suffix, keyword, regexp)
 	for _, item := range code {
 		switch item.Type {
 		case RuleTypeDomain:
 			builder.AddFull(item.Value)
 		case RuleTypeDomainSuffix:
-			builder.AddSuffix(item.Value)
+			value := item.Value
+			if !strings.HasPrefix(value, ".") {
+				value = "." + value
+			}
+			builder.AddSuffix(value)
 		case RuleTypeDomainKeyword:
 			builder.AddKeyword(item.Value)
 		case RuleTypeDomainRegex:

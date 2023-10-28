@@ -18,6 +18,10 @@ make build
     // _ "path/to/plugin-unneed"
 ```
 
+### 文档
+
+具体介绍请查看[文档](https://rnetx.github.io/cdns/)
+
 ## 开源许可证
 
 cdns 使用 GPL-3.0 开源许可证，详细请参阅 [LICENSE](LICENSE) 文件。

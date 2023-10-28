@@ -17,8 +17,8 @@ workflows:
 
 目前支持的匹配器插件列表：
 
-- domain
-- ip
-- sing-geosite
-- maxminddb
-- script
+- [domain](domain)
+- [ip](ip)
+- [geosite](geosite)
+- [maxminddb](maxminddb)
+- [script](script)

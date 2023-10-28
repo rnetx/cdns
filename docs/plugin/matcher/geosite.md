@@ -1,14 +1,18 @@
-# MaxmindDB IP 匹配
+# GeoSite 域名匹配
 
-MaxmindDB 匹配器可以灵活匹配返回的 ```IP```，提供比 ```resp-ip``` 更灵活的规则机制
+GeoSite 匹配器可以灵活匹配域名，提供比 ```qname``` 更灵活的规则机制
 
 ```yaml
 plugin-matchers:
     - tag: plugin
-      type: maxminddb
+      type: geosite
       args:
-        path: /path/to/file # maxminddb 文件
-        type: sing # MaxmindDB 文件类型，可选 sing | meta | geolite2-country
+        path: /path/to/file # 规则文件
+        type: sing # geosite 文件类型，必填，可选 sing | meta
+        code: cn # 载入的标签，为空载入所有标签，这会增加内存占用，只当 type: sing 生效
+        # code: # 载入多个标签
+        #   - cn
+        #   - google
 
 workflows:
     - tag: default
@@ -16,7 +20,7 @@ workflows:
         - match-and:
             - plugin:
                 tag: plugin
-                args: cn # 匹配的标签
+                args: cn # 匹配的标签，只当 type: sing 生效
                 # args: cn,google # 多个匹配的标签
                 # args: # 多个匹配的标签
                 #   - cn
