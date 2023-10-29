@@ -226,7 +226,8 @@ func (r *RedisCache) Exec(ctx context.Context, dnsCtx *adapter.DNSContext, argsI
 				return adapter.ReturnModeContinue, nil
 			}
 			r.logger.DebugfContext(ctx, "restore key: %s", key)
-			respMsg.SetReply(reqMsg)
+			respMsg = copyMsg(respMsg)
+			respMsg.Id = reqMsg.Id
 			dnsCtx.SetRespMsg(respMsg)
 			ok = true
 		}
@@ -270,13 +271,81 @@ func (r *RedisCache) APIHandler() chi.Router {
 	return builder.Build()
 }
 
+// from mosdns(https://github.com/IrineSistiana/mosdns), thank for @IrineSistiana
 func reqToKey(req *dns.Msg) string {
-	question := req.Question
-	var key string
-	if len(question) > 0 {
-		key = fmt.Sprintf("%s,%s,%s", question[0].Name, dns.TypeToString[question[0].Qtype], dns.ClassToString[question[0].Qclass])
+	if req.Response || req.Opcode != dns.OpcodeQuery || len(req.Question) != 1 {
+		return ""
 	}
-	return key
+	const (
+		adBit = 1 << iota
+		cdBit
+		doBit
+	)
+
+	question := req.Question[0]
+	buf := make([]byte, 1+2+1+len(question.Name)) // bits + qtype + qname length + qname
+	b := byte(0)
+	// RFC 6840 5.7: The AD bit in a query as a signal
+	// indicating that the requester understands and is interested in the
+	// value of the AD bit in the response.
+	if req.AuthenticatedData {
+		b = b | adBit
+	}
+	if req.CheckingDisabled {
+		b = b | cdBit
+	}
+	if opt := req.IsEdns0(); opt != nil && opt.Do() {
+		b = b | doBit
+	}
+	buf[0] = b
+	buf[1] = byte(question.Qtype << 8)
+	buf[2] = byte(question.Qtype)
+	buf[3] = byte(len(question.Name))
+	copy(buf[4:], question.Name)
+	return utils.BytesToStringUnsafe(buf)
+}
+
+// from mosdns(https://github.com/IrineSistiana/mosdns), thank for @IrineSistiana
+func copyMsg(req *dns.Msg) *dns.Msg {
+	if req == nil {
+		return nil
+	}
+
+	resp := new(dns.Msg)
+	resp.MsgHdr = req.MsgHdr
+	resp.Compress = req.Compress
+
+	if len(req.Question) > 0 {
+		resp.Question = make([]dns.Question, len(req.Question))
+		copy(resp.Question, req.Question)
+	}
+
+	lenExtra := len(req.Extra)
+	for _, r := range req.Extra {
+		if r.Header().Rrtype == dns.TypeOPT {
+			lenExtra--
+		}
+	}
+
+	s := make([]dns.RR, len(req.Answer)+len(req.Ns)+lenExtra)
+	resp.Answer, s = s[:0:len(req.Answer)], s[len(req.Answer):]
+	resp.Ns, s = s[:0:len(req.Ns)], s[len(req.Ns):]
+	resp.Extra = s[:0:lenExtra]
+
+	for _, r := range req.Answer {
+		resp.Answer = append(resp.Answer, dns.Copy(r))
+	}
+	for _, r := range req.Ns {
+		resp.Ns = append(resp.Ns, dns.Copy(r))
+	}
+
+	for _, r := range req.Extra {
+		if r.Header().Rrtype == dns.TypeOPT {
+			continue
+		}
+		resp.Extra = append(resp.Extra, dns.Copy(r))
+	}
+	return resp
 }
 
 func respFindMinTTL(resp *dns.Msg) uint32 {
