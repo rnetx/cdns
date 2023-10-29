@@ -12,26 +12,24 @@
         <meta name="author" content="yaotthaha">
       
       
-        <link rel="canonical" href="https://github.com/rnetx/cdns/">
+        <link rel="canonical" href="https://github.com/rnetx/cdns/plugin/executor/ecs/">
       
       
       
-        <link rel="next" href="example/">
       
-      
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.6">
     
     
       
-        <title>简介 - cdns</title>
+        <title>ECS - cdns</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.35e1ed30.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.35e1ed30.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.356b1318.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.356b1318.min.css">
       
       
 
@@ -50,7 +48,7 @@
       
     
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -79,7 +77,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#_1" class="md-skip">
+        <a href="#ecs" class="md-skip">
           Skip to content
         </a>
       
@@ -93,7 +91,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="cdns" class="md-header__button md-logo" aria-label="cdns" data-md-component="logo">
+    <a href="../../.." title="cdns" class="md-header__button md-logo" aria-label="cdns" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -113,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              简介
+              ECS
             
           </span>
         </div>
@@ -215,21 +213,17 @@
         
   
   
-    
-  
   
     
     
       
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="." class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../.." class="md-tabs__link">
           
   
     
@@ -252,7 +246,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="plugin/matcher/" class="md-tabs__link">
+        <a href="../../matcher/" class="md-tabs__link">
           
   
     
@@ -272,7 +266,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="plugin/executor/" class="md-tabs__link">
+        <a href="../" class="md-tabs__link">
           
   
     
@@ -309,7 +303,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="cdns" class="md-nav__button md-logo" aria-label="cdns" data-md-component="logo">
+    <a href="../../.." title="cdns" class="md-nav__button md-logo" aria-label="cdns" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -336,8 +330,6 @@
       
   
   
-    
-  
   
     
     
@@ -363,12 +355,14 @@
       
       
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
         
           
           <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
@@ -382,7 +376,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             基本配置
@@ -393,8 +387,6 @@
                 
   
   
-    
-  
   
     
     
@@ -412,17 +404,19 @@
       
       
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1_1" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1_1" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="." class="md-nav__link md-nav__link--active">
+            <a href="../../.." class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -433,13 +427,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_1_1" id="__nav_1_1_label" tabindex="">
+              <label class="md-nav__link " for="__nav_1_1" id="__nav_1_1_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_1_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_1_1_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_1_1">
             <span class="md-nav__icon md-icon"></span>
             简介
@@ -454,7 +448,7 @@
   
   
     <li class="md-nav__item">
-      <a href="example/" class="md-nav__link">
+      <a href="../../../example/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -482,7 +476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="global/" class="md-nav__link">
+      <a href="../../../global/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -502,7 +496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="log/log/" class="md-nav__link">
+      <a href="../../../log/log/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -522,7 +516,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api/api/" class="md-nav__link">
+      <a href="../../../api/api/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -585,7 +579,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="upstream/" class="md-nav__link ">
+            <a href="../../../upstream/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -617,7 +611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="upstream/tcp/" class="md-nav__link">
+      <a href="../../../upstream/tcp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -637,7 +631,7 @@
   
   
     <li class="md-nav__item">
-      <a href="upstream/udp/" class="md-nav__link">
+      <a href="../../../upstream/udp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -657,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="upstream/tls/" class="md-nav__link">
+      <a href="../../../upstream/tls/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -677,7 +671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="upstream/https/" class="md-nav__link">
+      <a href="../../../upstream/https/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -697,7 +691,7 @@
   
   
     <li class="md-nav__item">
-      <a href="upstream/quic/" class="md-nav__link">
+      <a href="../../../upstream/quic/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -717,7 +711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="upstream/parallel/" class="md-nav__link">
+      <a href="../../../upstream/parallel/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -737,7 +731,7 @@
   
   
     <li class="md-nav__item">
-      <a href="upstream/random/" class="md-nav__link">
+      <a href="../../../upstream/random/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -757,7 +751,7 @@
   
   
     <li class="md-nav__item">
-      <a href="upstream/querytest/" class="md-nav__link">
+      <a href="../../../upstream/querytest/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -777,7 +771,7 @@
   
   
     <li class="md-nav__item">
-      <a href="upstream/hosts/" class="md-nav__link">
+      <a href="../../../upstream/hosts/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -840,7 +834,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="listener/" class="md-nav__link ">
+            <a href="../../../listener/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -872,7 +866,7 @@
   
   
     <li class="md-nav__item">
-      <a href="listener/tcp/" class="md-nav__link">
+      <a href="../../../listener/tcp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -892,7 +886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="listener/udp/" class="md-nav__link">
+      <a href="../../../listener/udp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -912,7 +906,7 @@
   
   
     <li class="md-nav__item">
-      <a href="listener/tls/" class="md-nav__link">
+      <a href="../../../listener/tls/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -932,7 +926,7 @@
   
   
     <li class="md-nav__item">
-      <a href="listener/http/" class="md-nav__link">
+      <a href="../../../listener/http/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -952,7 +946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="listener/quic/" class="md-nav__link">
+      <a href="../../../listener/quic/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1009,7 +1003,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="workflow/" class="md-nav__link ">
+            <a href="../../../workflow/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1041,7 +1035,7 @@
   
   
     <li class="md-nav__item">
-      <a href="workflow/matcher/" class="md-nav__link">
+      <a href="../../../workflow/matcher/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1061,7 +1055,7 @@
   
   
     <li class="md-nav__item">
-      <a href="workflow/executor/" class="md-nav__link">
+      <a href="../../../workflow/executor/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1131,7 +1125,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="plugin/matcher/" class="md-nav__link ">
+            <a href="../../matcher/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1163,7 +1157,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugin/matcher/geosite/" class="md-nav__link">
+      <a href="../../matcher/geosite/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1183,7 +1177,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugin/matcher/maxminddb/" class="md-nav__link">
+      <a href="../../matcher/maxminddb/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1203,7 +1197,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugin/matcher/domain/" class="md-nav__link">
+      <a href="../../matcher/domain/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1223,7 +1217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugin/matcher/ip/" class="md-nav__link">
+      <a href="../../matcher/ip/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1243,7 +1237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugin/matcher/script/" class="md-nav__link">
+      <a href="../../matcher/script/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1301,7 +1295,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="plugin/executor/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1333,7 +1327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugin/executor/memcache/" class="md-nav__link">
+      <a href="../memcache/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1353,7 +1347,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugin/executor/rediscache/" class="md-nav__link">
+      <a href="../rediscache/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1373,7 +1367,7 @@
   
   
     <li class="md-nav__item">
-      <a href="plugin/executor/script/" class="md-nav__link">
+      <a href="../script/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1412,14 +1406,24 @@
   
 
 
-<h1 id="_1"><a class="toclink" href="#_1">简介</a><a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
-<p><code>cdns</code> 是一个使用 Golang 编写的，高度自定义的 DNS 服务器</p>
-<p>本项目使用 <code>GPLv3</code> 协议开源</p>
-<h2 id="_2"><a class="toclink" href="#_2">感谢</a><a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="https://github.com/miekg/dns">miekg/dns</a></li>
-<li><a href="https://github.com/IrineSistiana/mosdns">IrineSistiana/mosdns</a></li>
-</ul>
+<h1 id="ecs"><a class="toclink" href="#ecs">ECS</a><a class="headerlink" href="#ecs" title="Permanent link">&para;</a></h1>
+<p>ECS 可以附加 <code>edns client subnet</code> 记录</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">plugin-executors</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plugin</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ecs</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">      </span><span class="nt">args</span><span class="p">:</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">        </span><span class="nt">ipv4</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">192.168.1.1</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">        </span><span class="nt">ipv6</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2001:db8::1</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">        </span><span class="nt">mask4</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">24</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">        </span><span class="nt">mask6</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="nt">workflows</span><span class="p">:</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="nt">rules</span><span class="p">:</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">exec</span><span class="p">:</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">plugin</span><span class="p">:</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">                </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plugin</span>
+</code></pre></div>
 
 
 
@@ -1458,10 +1462,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.sections", "navigation.path", "navigation.expand", "navigation.indexes", "navigation.tabs", "toc.follow", "toc.integrate", "header.autohide"], "search": "assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.sections", "navigation.path", "navigation.expand", "navigation.indexes", "navigation.tabs", "toc.follow", "toc.integrate", "header.autohide"], "search": "../../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.aecac24b.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.aecac24b.min.js"></script>
       
     
   </body>

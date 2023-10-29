@@ -1431,18 +1431,19 @@
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">      </span><span class="nt">address</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">223.5.5.5</span><span class="w"> </span><span class="c1"># 服务器地址，支持域名|域名:端口|IP|IP:端口，若服务器地址是域名，必须设置 bootstrap 或（和）socks5</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="c1"># connect-timeout: 30s # 连接超时时间</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="c1"># idle-timeout: 60s # 连接空闲超时时间</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="c1"># enable-pipeline: false # 是否启用 Pipeline (TCP)</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="c1"># bootstrap: # 当 address 是域名时，使用 bootstrap 中的上游服务器解析域名</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">        </span><span class="c1"># upstream: bootstrap-upstream # 上游服务器标签</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">        </span><span class="c1"># strategy: &#39;&#39; # 解析策略，可选 prefer-ipv4 | prefer-ipv6 | only-ipv4 | only-ipv6 ，默认为 prefer-ipv4</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="c1"># bind-interface: eth0 # 绑定网卡</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="c1"># bind-ipv4: 0.0.0.0 # 绑定本地 IPv4 地址</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">      </span><span class="c1"># bind-ipv6: :: # 绑定本地 IPv6 地址</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="c1"># so-mark: 255 # 设置 SO_MARK (Linux)</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">      </span><span class="c1"># socks5: # 使用 SOCKS5 代理</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">      </span><span class="c1">#   address: 127.0.0.1:1080 # SOCKS5 服务器地址，格式：IP:端口</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">      </span><span class="c1">#   username: &#39;&#39; # SOCKS5 用户名</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">      </span><span class="c1">#   password: &#39;&#39; # SOCKS5 密码</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">      </span><span class="c1"># edns0: false # 启用 EDNS0 支持，详情参考 https://github.com/IrineSistiana/udpme</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="c1"># enable-pipeline: false # 是否启用 Pipeline (TCP)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="c1"># bootstrap: # 当 address 是域名时，使用 bootstrap 中的上游服务器解析域名</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">        </span><span class="c1"># upstream: bootstrap-upstream # 上游服务器标签</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">        </span><span class="c1"># strategy: &#39;&#39; # 解析策略，可选 prefer-ipv4 | prefer-ipv6 | only-ipv4 | only-ipv6 ，默认为 prefer-ipv4</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">      </span><span class="c1"># bind-interface: eth0 # 绑定网卡</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">      </span><span class="c1"># bind-ipv4: 0.0.0.0 # 绑定本地 IPv4 地址</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="c1"># bind-ipv6: :: # 绑定本地 IPv6 地址</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">      </span><span class="c1"># so-mark: 255 # 设置 SO_MARK (Linux)</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">      </span><span class="c1"># socks5: # 使用 SOCKS5 代理</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">      </span><span class="c1">#   address: 127.0.0.1:1080 # SOCKS5 服务器地址，格式：IP:端口</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">      </span><span class="c1">#   username: &#39;&#39; # SOCKS5 用户名</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">      </span><span class="c1">#   password: &#39;&#39; # SOCKS5 密码</span>
 </code></pre></div>
 
 
