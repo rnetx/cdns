@@ -10,8 +10,16 @@ import (
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/plugin"
+
 	"github.com/rnetx/cdns/plugin/matcher/geosite/meta"
+	// meta "github.com/rnetx/cdns/plugin/matcher/geosite/meta_stub"
+
 	"github.com/rnetx/cdns/plugin/matcher/geosite/sing"
+	// sing "github.com/rnetx/cdns/plugin/matcher/geosite/sing_stub"
+
+	"github.com/rnetx/cdns/plugin/matcher/geosite/v2xray"
+	// v2xray "github.com/rnetx/cdns/plugin/matcher/geosite/v2xray_stub"
+
 	"github.com/rnetx/cdns/utils"
 	"github.com/rnetx/cdns/utils/domain"
 
@@ -74,6 +82,8 @@ func NewGeoSite(ctx context.Context, _ adapter.Core, logger log.Logger, tag stri
 		g.geositeType = "sing"
 	case "meta", "clash.meta", "clash-meta":
 		g.geositeType = "meta"
+	case "v2ray", "xray", "ray", "*ray":
+		g.geositeType = "v2xray"
 	case "":
 		return nil, fmt.Errorf("missing type")
 	default:
@@ -129,6 +139,20 @@ func (g *GeoSite) loadSingRule() error {
 	return nil
 }
 
+func (g *GeoSite) loadV2xrayRule() error {
+	var loadCodes []string
+	if len(g.code) > 0 {
+		loadCodes = g.code
+	}
+	ruleMap, err := v2xray.ReadRule(g.path, loadCodes)
+	if err != nil {
+		return fmt.Errorf("read v2xray-geosite file failed: %s, errors: %s", g.path, err)
+	}
+	g.ruleMap = ruleMap
+	g.logger.Infof("load %d codes", len(g.ruleMap))
+	return nil
+}
+
 func (g *GeoSite) loadMetaRule() error {
 	rule, length, err := meta.ReadFile(g.path)
 	if err != nil {
@@ -145,13 +169,15 @@ func (g *GeoSite) loadRule() error {
 		return g.loadSingRule()
 	case "meta":
 		return g.loadMetaRule()
+	case "v2xray":
+		return g.loadV2xrayRule()
 	}
 	return nil
 }
 
 func (g *GeoSite) LoadRunningArgs(_ context.Context, args any) (uint16, error) {
 	switch g.geositeType {
-	case "sing":
+	case "sing", "v2xray":
 		var codes utils.Listable[string]
 		err := utils.JsonDecode(args, &codes)
 		if err != nil {
@@ -199,7 +225,7 @@ func (g *GeoSite) Match(ctx context.Context, dnsCtx *adapter.DNSContext, argsID 
 	question := reqMsg.Question[0]
 	name := question.Name
 	switch g.geositeType {
-	case "sing":
+	case "sing", "v2xray":
 		codes := g.runningArgsMap[argsID]
 		ruleMap := g.ruleMap
 		for _, code := range codes {
