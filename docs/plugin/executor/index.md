@@ -20,3 +20,4 @@ workflows:
 - [memcache](memcache)
 - [rediscache](rediscache)
 - [script](script)
+- [ecs](ecs)

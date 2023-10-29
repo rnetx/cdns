@@ -7,10 +7,10 @@ plugin-matchers:
     - tag: plugin
       type: ip
       args:
-        rule: '1.1.1.1' # 匹配规则
+        rule: '192.168.1.1' # 匹配规则
         # rule:
-        #   - '1.1.1.1'
-        #   - '1.0.0.0/24'
+        #   - '192.168.1.1'
+        #   - '192.168.1.0/24'
         file: /path/to/rule # 规则文件
         # file:
         #   - /path/to/file1
