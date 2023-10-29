@@ -244,6 +244,11 @@ func (u *UDPUpstream) exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, err
 			reqIsEDNS0 = true
 		}
 	}
+	if opt := _req.IsEdns0(); opt != nil {
+		conn.UDPSize = opt.UDPSize()
+	} else {
+		conn.UDPSize = DefaultUDPBufferSize
+	}
 	err = conn.WriteMsg(req)
 	if err != nil {
 		return nil, fmt.Errorf("send dns message failed: %s", err)
