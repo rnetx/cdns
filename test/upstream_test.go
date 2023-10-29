@@ -40,12 +40,7 @@ func dnsRequests() []*dns.Msg {
 }
 
 func reqInfo(req *dns.Msg) string {
-	s := ""
-	question := req.Question
-	if len(question) > 0 {
-		s += fmt.Sprintf("%s %s %s", question[0].Name, dns.TypeToString[question[0].Qtype], dns.ClassToString[question[0].Qclass])
-	}
-	return s
+	return fmt.Sprintf("%s %s %s", req.Question[0].Name, dns.TypeToString[req.Question[0].Qtype], dns.ClassToString[req.Question[0].Qclass])
 }
 
 func initTestUpstream(t *testing.T, options upstream.Options) {

@@ -82,11 +82,7 @@ func (r *itemExecutorReturnRule) exec(ctx context.Context, core adapter.Core, lo
 	case "":
 		return adapter.ReturnModeContinue, nil
 	}
-	var name string
-	question := dnsCtx.ReqMsg().Question
-	if len(question) > 0 {
-		name = question[0].Name
-	}
+	name := dnsCtx.ReqMsg().Question[0].Name
 	newRespMsg := &dns.Msg{}
 	newRespMsg.SetRcode(dnsCtx.ReqMsg(), rcode)
 	newRespMsg.Ns = []dns.RR{utils.FakeSOA(name)}

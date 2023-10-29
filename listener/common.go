@@ -144,14 +144,14 @@ func (l *GenericListener) Handle(ctx context.Context, req *dns.Msg, clientAddr n
 }
 
 func reqMessageInfo(req *dns.Msg) string {
-	questions := req.Question
-	if len(questions) > 0 {
-		return fmt.Sprintf("%s %s %s", dns.ClassToString[questions[0].Qclass], dns.TypeToString[questions[0].Qtype], questions[0].Name)
-	}
-	return "???"
+	return fmt.Sprintf("%s %s %s", dns.ClassToString[req.Question[0].Qclass], dns.TypeToString[req.Question[0].Qtype], req.Question[0].Name)
 }
 
 func listenerHandle(ctx context.Context, listener string, logger log.Logger, workflow adapter.Workflow, req *dns.Msg, clientAddr netip.AddrPort) *dns.Msg {
+	if len(req.Question) == 0 {
+		logger.Error(ctx, "invalid request: no question")
+		return nil
+	}
 	dnsCtx := adapter.NewDNSContext(ctx, listener, clientAddr.Addr(), req)
 	ctx = dnsCtx.Context()
 	ctx = adapter.SaveLogContext(ctx, dnsCtx)

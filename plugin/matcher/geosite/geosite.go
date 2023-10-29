@@ -196,12 +196,8 @@ func (g *GeoSite) LoadRunningArgs(_ context.Context, args any) (uint16, error) {
 
 func (g *GeoSite) Match(ctx context.Context, dnsCtx *adapter.DNSContext, argsID uint16) (bool, error) {
 	reqMsg := dnsCtx.ReqMsg()
-	question := reqMsg.Question
-	if len(question) == 0 {
-		g.logger.DebugfContext(ctx, "request question is empty")
-		return false, nil
-	}
-	name := question[0].Name
+	question := reqMsg.Question[0]
+	name := question.Name
 	switch g.geositeType {
 	case "sing":
 		codes := g.runningArgsMap[argsID]

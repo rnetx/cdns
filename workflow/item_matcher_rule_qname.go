@@ -39,12 +39,8 @@ func (r *itemMatcherQNameRule) check(_ context.Context, _ adapter.Core) error {
 }
 
 func (r *itemMatcherQNameRule) match(ctx context.Context, core adapter.Core, logger log.Logger, dnsCtx *adapter.DNSContext) (bool, error) {
-	question := dnsCtx.ReqMsg().Question
-	if len(question) == 0 {
-		logger.DebugfContext(ctx, "qname: no match qname: no request question found")
-		return false, nil
-	}
-	qName := question[0].Name
+	question := dnsCtx.ReqMsg().Question[0]
+	qName := question.Name
 	for _, n := range r.qName {
 		if n == qName {
 			logger.DebugfContext(ctx, "qname: match qname: %s", qName)

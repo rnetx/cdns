@@ -50,12 +50,8 @@ func (r *itemMatcherQTypeRule) check(_ context.Context, _ adapter.Core) error {
 }
 
 func (r *itemMatcherQTypeRule) match(ctx context.Context, core adapter.Core, logger log.Logger, dnsCtx *adapter.DNSContext) (bool, error) {
-	question := dnsCtx.ReqMsg().Question
-	if len(question) == 0 {
-		logger.DebugfContext(ctx, "qtype: no match qtype: no request question found")
-		return false, nil
-	}
-	qType := question[0].Qtype
+	question := dnsCtx.ReqMsg().Question[0]
+	qType := question.Qtype
 	for _, t := range r.qType {
 		if t == qType {
 			logger.DebugfContext(ctx, "qtype: match qtype: %s", dns.TypeToString[t])

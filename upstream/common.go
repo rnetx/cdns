@@ -21,11 +21,7 @@ const (
 )
 
 func reqMessageInfo(req *dns.Msg) string {
-	questions := req.Question
-	if len(questions) > 0 {
-		return fmt.Sprintf("%s %s %s", dns.ClassToString[questions[0].Qclass], dns.TypeToString[questions[0].Qtype], questions[0].Name)
-	}
-	return "???"
+	return fmt.Sprintf("%s %s %s", dns.ClassToString[req.Question[0].Qclass], dns.TypeToString[req.Question[0].Qtype], req.Question[0].Name)
 }
 
 func Exchange(ctx context.Context, req *dns.Msg, logger log.Logger, exchangeFunc func(ctx context.Context, req *dns.Msg) (*dns.Msg, error)) (resp *dns.Msg, err error) {

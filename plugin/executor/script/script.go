@@ -91,12 +91,9 @@ func (s *Script) buildArgs(dnsCtx *adapter.DNSContext) map[string]string {
 	m["CDNS_CLIENT_IP"] = dnsCtx.ClientIP().String()
 	reqMsg := dnsCtx.ReqMsg()
 	if reqMsg != nil {
-		if len(reqMsg.Question) > 0 {
-			q := reqMsg.Question[0]
-			m["CDNS_REQ_QNAME"] = q.Name
-			m["CDNS_REQ_QTYPE"] = dns.TypeToString[q.Qtype]
-			m["CDNS_REQ_QCLASS"] = dns.ClassToString[q.Qclass]
-		}
+		m["CDNS_REQ_QNAME"] = reqMsg.Question[0].Name
+		m["CDNS_REQ_QTYPE"] = dns.TypeToString[reqMsg.Question[0].Qtype]
+		m["CDNS_REQ_QCLASS"] = dns.ClassToString[reqMsg.Question[0].Qclass]
 	}
 	respMsg := dnsCtx.RespMsg()
 	if respMsg != nil {

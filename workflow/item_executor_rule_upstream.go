@@ -75,12 +75,8 @@ func (r *itemExecutorUpstreamRule) exec(ctx context.Context, core adapter.Core, 
 		logger.DebugfContext(ctx, "upstream: request message is nil")
 		return adapter.ReturnModeContinue, nil
 	}
-	question := reqMsg.Question
-	if len(question) == 0 {
-		logger.DebugfContext(ctx, "upstream: request message has no question")
-		return adapter.ReturnModeContinue, nil
-	}
-	qType := question[0].Qtype
+	question := reqMsg.Question[0]
+	qType := question.Qtype
 	if (qType != dns.TypeA && qType != dns.TypeAAAA) || r.strategy == "" || (qType == dns.TypeA && r.strategy == upstreamStrategyPreferIPv4) || (qType == dns.TypeAAAA && r.strategy == upstreamStrategyPreferIPv6) {
 		respMsg, err := r.upstream.Exchange(ctx, reqMsg)
 		if err != nil {
@@ -94,11 +90,11 @@ func (r *itemExecutorUpstreamRule) exec(ctx context.Context, core adapter.Core, 
 	var extraReqMsg *dns.Msg
 	if qType == dns.TypeA {
 		extraReqMsg = &dns.Msg{}
-		extraReqMsg.SetQuestion(question[0].Name, dns.TypeAAAA)
+		extraReqMsg.SetQuestion(question.Name, dns.TypeAAAA)
 	}
 	if qType == dns.TypeAAAA {
 		extraReqMsg = &dns.Msg{}
-		extraReqMsg.SetQuestion(question[0].Name, dns.TypeA)
+		extraReqMsg.SetQuestion(question.Name, dns.TypeA)
 	}
 	ch := utils.NewSafeChan[exchangeResult](2)
 	defer ch.Close()
@@ -164,7 +160,7 @@ func (r *itemExecutorUpstreamRule) exec(ctx context.Context, core adapter.Core, 
 		logger.DebugfContext(ctx, "upstream: qType: %s, but strategy: %s, drop response and generate empty response", dns.TypeToString[qType], r.strategy)
 		respMsg = &dns.Msg{}
 		respMsg.SetReply(reqMsg)
-		respMsg.Ns = []dns.RR{utils.FakeSOA(question[0].Name)}
+		respMsg.Ns = []dns.RR{utils.FakeSOA(question.Name)}
 	}
 	dnsCtx.SetRespMsg(respMsg)
 	dnsCtx.SetRespUpstreamTag(r.upstream.Tag())

@@ -106,22 +106,18 @@ func (d *Domain) Match(ctx context.Context, dnsCtx *adapter.DNSContext, _ uint16
 		d.logger.DebugContext(ctx, "request message is nil")
 		return false, nil
 	}
-	question := reqMsg.Question
-	if len(question) == 0 {
-		d.logger.DebugContext(ctx, "request question is empty")
-		return false, nil
-	}
-	name := question[0].Name
+	question := reqMsg.Question[0]
+	name := question.Name
 	name = strings.TrimSuffix(name, ".")
 
 	if d.insideRuleSet.Match(name) {
-		d.logger.DebugfContext(ctx, "match rule: %s", question[0].Name)
+		d.logger.DebugfContext(ctx, "match rule: %s", question.Name)
 		return true, nil
 	}
 	fileRules := d.fileRuleSet
 	for _, set := range fileRules {
 		if set.Match(name) {
-			d.logger.DebugfContext(ctx, "match rule: %s", question[0].Name)
+			d.logger.DebugfContext(ctx, "match rule: %s", question.Name)
 			return true, nil
 		}
 	}

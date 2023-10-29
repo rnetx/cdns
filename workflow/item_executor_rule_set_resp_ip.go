@@ -69,12 +69,9 @@ func (r *itemExecutorSetRespIPRule) exec(ctx context.Context, core adapter.Core,
 	if reqMsg == nil {
 		return adapter.ReturnModeContinue, fmt.Errorf("set-resp-ip: request message is nil")
 	}
-	question := reqMsg.Question
-	if len(question) == 0 {
-		return adapter.ReturnModeContinue, fmt.Errorf("set-resp-ip: request question is empty")
-	}
-	qName := question[0].Name
-	qType := question[0].Qtype
+	question := reqMsg.Question[0]
+	qName := question.Name
+	qType := question.Qtype
 	if qType == dns.TypeA && !r.ipv4 {
 		return adapter.ReturnModeContinue, fmt.Errorf("set-resp-ip: request type is A, but no ipv4 ip")
 	}

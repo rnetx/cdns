@@ -136,13 +136,10 @@ func (u *HostsUpstream) Dependencies() []string {
 }
 
 func (u *HostsUpstream) exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, error) {
-	question := req.Question
-	if len(question) == 0 {
-		return nil, fmt.Errorf("request message is nil")
-	}
-	qName := question[0].Name
+	question := req.Question[0]
+	qName := question.Name
 	qName = strings.TrimSuffix(qName, ".")
-	qType := question[0].Qtype
+	qType := question.Qtype
 	for _, r := range u.rule {
 		matched, err := r.rule.MatchString(qName)
 		if err == nil && matched {
