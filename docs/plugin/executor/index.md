@@ -21,3 +21,4 @@ workflows:
 - [rediscache](rediscache)
 - [script](script)
 - [ecs](ecs)
+- [ipset](ipset)

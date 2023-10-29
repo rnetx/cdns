@@ -58,11 +58,15 @@ func NewECS(_ context.Context, _ adapter.Core, logger log.Logger, tag string, ar
 	e.useClientIP = a.UseClientIP
 	if a.Mask4 == 0 {
 		e.mask4 = DefaultMask4
+	} else if a.Mask4 > 32 {
+		return nil, fmt.Errorf("invalid mask4: %d", a.Mask4)
 	} else {
 		e.mask4 = a.Mask4
 	}
 	if a.Mask6 == 0 {
 		e.mask6 = DefaultMask6
+	} else if a.Mask6 > 128 {
+		return nil, fmt.Errorf("invalid mask6: %d", a.Mask6)
 	} else {
 		e.mask6 = a.Mask6
 	}
