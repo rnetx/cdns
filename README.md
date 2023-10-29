@@ -25,3 +25,8 @@ make build
 ## 开源许可证
 
 cdns 使用 GPL-3.0 开源许可证，详细请参阅 [LICENSE](LICENSE) 文件。
+
+## 感谢
+
+- [miekg/dns](https://github.com/miekg/dns)
+- [IrineSistiana/mosdns](https://github.com/IrineSistiana/mosdns)

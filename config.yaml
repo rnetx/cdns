@@ -1,83 +1,84 @@
 log:
   level: info
 
+api:
+  listen: 127.0.0.1:9088
+  secret: admin
+
 upstreams:
   - tag: AliDNS
-    type: quic
+    type: tls
     address: 223.5.5.5
 
-  - tag: Google
+  - tag: OpenDNS
+    type: tls
+    address: 208.67.222.222
+
+  - tag: GoogleDNS
     type: tls
     address: 8.8.8.8
-    #socks5:
-    #  address: 127.0.0.1:1080
 
-#  - tag: Google-UDP
-#    type: udp
-#    address: 8.8.8.8
-#
-#  - tag: Google-TCP
-#    type: tcp
-#    address: 8.8.8.8
-#
-#  - tag: Google-DoH
-#    type: https
-#    address: 8.8.8.8
-#    # use-http3: true # Use HTTP/3
-#
-#  - tag: AdGuard-DoQ
-#    type: quic
-#    address: 94.140.14.14:784
-#    servername: dns.adguard-dns.com # TLS SNI
-
+  - tag: WorldDNS # 并发请求，防止应某些原因请求失败
+    type: parallel
+    upstreams:
+      - OpenDNS
+      - GoogleDNS
 
 plugin-matchers:
   - tag: geosite
-    type: geosite # https://github.com/SagerNet/sing-geosite
+    type: geosite
     args:
       type: sing
-      path: /path/to/geosite.db
-      code: cn
+      path: /etc/cdns/geosite.db # 填写 geosite (sing-box) 位置
+      code: gfw
+
+plugin-executors:
+  - tag: cache
+    type: memcache
+    args:
+      dump-file: /tmp/dns.cache
+      dump-interval: 10s
 
 workflows:
-  - tag: default
+  - tag: main
     rules:
-      - match-and:
-          - plugin: # Use Plugin Matcher
-              tag: geosite # Plugin Matcher Tag
-              args: cn # SingGeoSite: Match code `cn`
-        exec: # Run Executors if match successfully
-          - upstream: AliDNS # Send Request to upstream `AliDNS`
+      - exec: # 若命中缓存，则直接返回缓存结果
+          - plugin:
+              tag: cache
+              args:
+                mode: restore
+                return: true
+
+      - match-or: # 屏蔽 AAAA 和 HTTPS 请求
+          - qtype:
+              - 28 # AAAA
+              - HTTPS
+        exec:
+          - return: success # 生成空请求
+
+      - match-or: # GFW 列表采用 WorldDNS 查询，否则采用 AliDNS 查询
+          - plugin:
+              tag: geosite
+              args: gfw
+        exec:
+          - upstream: WorldDNS
         else-exec:
-          - upstream: Google # Send Request to upstream `Google`
+          - upstream: AliDNS
+
+      - exec:
+          - plugin: # 缓存结果
+              tag: cache
+              args:
+                mode: store
+
 
 listeners:
-  - tag: TCP
+  - tag: listener-tcp
     type: tcp
-    listen: :53 # Listen [::]:53
-    workflow: default # Workflow Tag
+    listen: :53
+    workflow: main
 
-  - tag: UDP
+  - tag: listener-udp
     type: udp
-    listen: :53 # Listen [::]:53
-    workflow: default # Workflow Tag
-
-#  - tag: TLS
-#    type: tls
-#    listen: :853
-#    server-cert-file: /path/to/cert.pem
-#    server-key-file: /path/to/key.pem
-#
-#  - tag: HTTPS
-#    type: https
-#    listen: :443
-#    server-cert-file: /path/to/cert.pem
-#    server-key-file: /path/to/key.pem
-#
-#  - tag: QUIC
-#    type: quic
-#    listen: :853
-#    enable-0rtt: true # 0RTT Support (QUIC)
-#    server-cert-file: /path/to/cert.pem
-#    server-key-file: /path/to/key.pem
-
+    listen: :53
+    workflow: main
