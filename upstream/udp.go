@@ -23,6 +23,7 @@ type UDPUpstreamOptions struct {
 	Address            string             `yaml:"address"`
 	ConnectTimeout     utils.Duration     `yaml:"connect-timeout,omitempty"`
 	IdleTimeout        utils.Duration     `yaml:"idle-timeout,omitempty"`
+	EDNS0              bool               `yaml:"edns0,omitempty"`
 	DisableFallbackTCP bool               `yaml:"disable-fallback-tcp,omitempty"`
 	EnablePipeline     bool               `yaml:"enable-pipeline,omitempty"`
 	BootstrapOptions   *bootstrap.Options `yaml:"bootstrap,omitempty"`
@@ -51,6 +52,8 @@ type UDPUpstream struct {
 
 	connectTimeout time.Duration
 	idleTimeout    time.Duration
+
+	edns0 bool
 
 	disableFallbackTCP bool
 	enablePipeline     bool
@@ -102,6 +105,7 @@ func NewUDPUpstream(ctx context.Context, core adapter.Core, logger log.Logger, t
 	}
 	u.disableFallbackTCP = options.DisableFallbackTCP
 	u.enablePipeline = options.EnablePipeline
+	u.edns0 = options.EDNS0
 	return u, nil
 }
 
@@ -229,13 +233,40 @@ func (u *UDPUpstream) exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, err
 	if err != nil {
 		return nil, fmt.Errorf("set udp connection deadline failed: %s", err)
 	}
+	// EDNS0
+	_req := req
+	var reqIsEDNS0 bool
+	if u.edns0 {
+		if _req.IsEdns0() == nil {
+			_req = req.Copy()
+			_req.SetEdns0(512, false)
+		} else {
+			reqIsEDNS0 = true
+		}
+	}
 	err = conn.WriteMsg(req)
 	if err != nil {
 		return nil, fmt.Errorf("send dns message failed: %s", err)
 	}
-	resp, err := conn.ReadMsg()
-	if err != nil {
-		return nil, fmt.Errorf("receive dns message failed: %s", err)
+	var resp *dns.Msg
+	if u.edns0 {
+		for {
+			resp, err = conn.ReadMsg()
+			if err != nil {
+				return nil, fmt.Errorf("receive dns message failed: %s", err)
+			}
+			if resp.IsEdns0() != nil {
+				break
+			}
+		}
+		if !reqIsEDNS0 {
+			removeEDNS0(resp)
+		}
+	} else {
+		resp, err = conn.ReadMsg()
+		if err != nil {
+			return nil, fmt.Errorf("receive dns message failed: %s", err)
+		}
 	}
 	u.udpConnPool.Put(ctx, conn)
 	//
@@ -289,5 +320,15 @@ func (u *UDPUpstream) StatisticalData() map[string]any {
 	return map[string]any{
 		"total":   total,
 		"success": success,
+	}
+}
+
+// from mosdns(https://github.com/IrineSistiana/mosdns), thank for @IrineSistiana
+func removeEDNS0(m *dns.Msg) {
+	for i := len(m.Extra) - 1; i >= 0; i-- {
+		if m.Extra[i].Header().Rrtype == dns.TypeOPT {
+			m.Extra = append(m.Extra[:i], m.Extra[i+1:]...)
+			return
+		}
 	}
 }

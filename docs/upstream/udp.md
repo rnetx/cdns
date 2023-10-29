@@ -7,6 +7,7 @@ upstreams:
       address: 223.5.5.5 # 服务器地址，支持域名|域名:端口|IP|IP:端口，若服务器地址是域名，必须设置 bootstrap 或（和）socks5
       # connect-timeout: 30s # 连接超时时间
       # idle-timeout: 60s # 连接空闲超时时间
+      # edns0: false # 启用 EDNS0 支持，详情参考 https://github.com/IrineSistiana/udpme
       # enable-pipeline: false # 是否启用 Pipeline (TCP)
       # bootstrap: # 当 address 是域名时，使用 bootstrap 中的上游服务器解析域名
         # upstream: bootstrap-upstream # 上游服务器标签
