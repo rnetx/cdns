@@ -11,8 +11,8 @@ import (
 
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
-	"github.com/rnetx/cdns/upstream/network"
 	"github.com/rnetx/cdns/upstream/network/basic/control"
+	"github.com/rnetx/cdns/upstream/network/netinterface"
 	"github.com/rnetx/cdns/utils"
 
 	"github.com/insomniacslk/dhcp/dhcpv4"
@@ -20,15 +20,14 @@ import (
 )
 
 type DHCPUpstreamOptions struct {
-	Interface          string          `yaml:"interface"`
-	UseIPv6            bool            `yaml:"use-ipv6,omitempty"`
-	FlushInterval      utils.Duration  `yaml:"flush-interval,omitempty"`
-	ConnectTimeout     utils.Duration  `yaml:"connect-timeout,omitempty"`
-	IdleTimeout        utils.Duration  `yaml:"idle-timeout,omitempty"`
-	EDNS0              bool            `yaml:"edns0,omitempty"`
-	DisableFallbackTCP bool            `yaml:"disable-fallback-tcp,omitempty"`
-	EnablePipeline     bool            `yaml:"enable-pipeline,omitempty"`
-	DialerOptions      network.Options `yaml:",inline,omitempty"`
+	Interface          string         `yaml:"interface"`
+	UseIPv6            bool           `yaml:"use-ipv6,omitempty"`
+	FlushInterval      utils.Duration `yaml:"flush-interval,omitempty"`
+	ConnectTimeout     utils.Duration `yaml:"connect-timeout,omitempty"`
+	IdleTimeout        utils.Duration `yaml:"idle-timeout,omitempty"`
+	EDNS0              bool           `yaml:"edns0,omitempty"`
+	DisableFallbackTCP bool           `yaml:"disable-fallback-tcp,omitempty"`
+	EnablePipeline     bool           `yaml:"enable-pipeline,omitempty"`
 }
 
 const (
@@ -61,8 +60,6 @@ type DHCPUpstream struct {
 	disableFallbackTCP bool
 	enablePipeline     bool
 
-	dialerOptions network.Options
-
 	flushInterval     time.Duration
 	fetchCtx          context.Context
 	fetchCancel       context.CancelFunc
@@ -80,9 +77,6 @@ func NewDHCPUpstream(ctx context.Context, core adapter.Core, logger log.Logger, 
 		core:   core,
 		tag:    tag,
 		logger: logger,
-	}
-	if options.Interface == "" {
-		return nil, fmt.Errorf("create dhcp upstream failed: missing interface")
 	}
 	u.interfaceName = options.Interface
 	u.useIPv6 = false // TODO: IPv6
@@ -102,7 +96,6 @@ func NewDHCPUpstream(ctx context.Context, core adapter.Core, logger log.Logger, 
 	u.disableFallbackTCP = options.DisableFallbackTCP
 	u.enablePipeline = options.EnablePipeline
 	u.edns0 = options.EDNS0
-	u.dialerOptions = options.DialerOptions
 	return u, nil
 }
 
@@ -179,15 +172,39 @@ func (u *DHCPUpstream) fetchDNSUpstream(ctx context.Context) error {
 }
 
 func (u *DHCPUpstream) fetchDNSUpstream4(ctx context.Context) error {
-	iface, err := net.InterfaceByName(u.interfaceName)
+	var (
+		iface *net.Interface
+		err   error
+	)
+	if u.interfaceName == "" {
+		iface, err = netinterface.GetDefaultInterfaceName()
+		if err != nil {
+			return err
+		}
+		u.logger.Debugf("auto get interface: %s", iface.Name)
+	} else {
+		iface, err = net.InterfaceByName(u.interfaceName)
+	}
 	if err != nil {
 		return err
 	}
-	u.listenerConfig.Control = control.AppendControl(control.BindToInterface(u.interfaceName, u.useIPv6), control.ReuseAddr())
 	listenAddr := "0.0.0.0:68"
 	if runtime.GOOS == "linux" || runtime.GOOS == "android" {
 		listenAddr = "255.255.255.255:68"
 	}
+	addresses, err := iface.Addrs()
+	if err != nil {
+		return err
+	}
+	for _, address := range addresses {
+		ipNet, ok := address.(*net.IPNet)
+		if ok && ipNet.IP.To4() != nil {
+			listenAddr = net.JoinHostPort(ipNet.IP.String(), "68")
+			break
+		}
+	}
+	u.listenerConfig.Control = control.AppendControl(control.BindToInterface(iface.Name, u.useIPv6), control.ReuseAddr())
+
 	conn, err := u.listenerConfig.ListenPacket(ctx, "udp4", listenAddr)
 	if err != nil {
 		return err
@@ -282,7 +299,6 @@ func (u *DHCPUpstream) flushDNSUpstream(ips []string) (err error) {
 				EDNS0:              u.edns0,
 				DisableFallbackTCP: u.disableFallbackTCP,
 				EnablePipeline:     u.enablePipeline,
-				DialerOptions:      u.dialerOptions,
 			},
 		}
 		uu, err = NewUpstream(u.ctx, u.core, u.logger, options.Tag, options)
@@ -322,10 +338,7 @@ func (u *DHCPUpstream) flushDNSUpstream(ips []string) (err error) {
 		}
 	}
 	u.logger.Debugf("new upstream addresses: [%s]", strings.Join(add, ", "))
-	upstreamAddresses := make([]string, 0, len(olds)+len(add))
-	upstreamAddresses = append(upstreamAddresses, add...)
-	upstreamAddresses = append(upstreamAddresses, remove...)
-	u.upstreamAddresses = upstreamAddresses
+	u.upstreamAddresses = ips
 	return nil
 }
 

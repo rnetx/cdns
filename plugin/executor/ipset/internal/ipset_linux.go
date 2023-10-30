@@ -6,7 +6,7 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/vishvananda/netlink"
+	"github.com/sagernet/netlink"
 )
 
 var _ IPSet = (*IPSetLinux)(nil)

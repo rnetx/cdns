@@ -17,10 +17,11 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/jackpal/gateway v1.0.10 // indirect
 	github.com/josharian/native v1.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/u-root/uio v0.0.0-20230220225925-ffce2a382923 // indirect
-	github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae // indirect
+	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )
 
@@ -37,9 +38,9 @@ require (
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/qtls-go1-20 v0.3.4 // indirect
+	github.com/sagernet/netlink v0.0.0-20220905062125-8043b4a9aa97 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/v2fly/v2ray-core/v5 v5.10.1
-	github.com/vishvananda/netlink v1.2.1-beta.2
 	go.uber.org/mock v0.3.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/exp v0.0.0-20230725093048-515e97ebf090 // indirect
