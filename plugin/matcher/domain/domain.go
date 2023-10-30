@@ -110,9 +110,11 @@ func (d *Domain) Match(ctx context.Context, dnsCtx *adapter.DNSContext, _ uint16
 	name := question.Name
 	name = strings.TrimSuffix(name, ".")
 
-	if d.insideRuleSet.Match(name) {
-		d.logger.DebugfContext(ctx, "match rule: %s", question.Name)
-		return true, nil
+	if d.insideRuleSet != nil {
+		if d.insideRuleSet.Match(name) {
+			d.logger.DebugfContext(ctx, "match rule: %s", question.Name)
+			return true, nil
+		}
 	}
 	fileRules := d.fileRuleSet
 	for _, set := range fileRules {

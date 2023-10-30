@@ -124,6 +124,16 @@ func (i *IP) Match(ctx context.Context, dnsCtx *adapter.DNSContext, _ uint16) (b
 		i.logger.DebugfContext(ctx, "no ips found")
 		return false, nil
 	}
+	if i.insideRules != nil {
+		for _, ip := range ips {
+			for _, p := range i.insideRules {
+				if p.Contains(ip) {
+					i.logger.DebugfContext(ctx, "match rule: %s => %s", p.String(), ip.String())
+					return true, nil
+				}
+			}
+		}
+	}
 	fileRules := i.fileRules
 	for _, ip := range ips {
 		for _, p := range i.insideRules {
