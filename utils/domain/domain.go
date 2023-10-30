@@ -63,7 +63,7 @@ func (b *DomainSetBuilder) Build() (*DomainSet, error) {
 	if len(b.regexps) > 0 {
 		s.regexps = make([]*regexp2.Regexp, len(b.regexps))
 		for i, r := range b.regexps {
-			regex, err := regexp2.Compile(r, regexp2.RE2)
+			regex, err := regexp2.Compile(r, regexp2.None) // Disable RE2
 			if err != nil {
 				return nil, fmt.Errorf("compile regexp %s failed: %v", r, err)
 			}
