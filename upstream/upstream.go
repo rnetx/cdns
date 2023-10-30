@@ -29,6 +29,7 @@ type Options struct {
 	QUICOptions  *QUICUpstreamOptions
 
 	HostsOptions *HostsUpstreamOptions
+	DHCPOptions  *DHCPUpstreamOptions
 
 	RandomOptions    *RandomUpstreamOptions
 	ParallelOptions  *ParallelUpstreamOptions
@@ -67,6 +68,9 @@ func (o *Options) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	case HostsUpstreamType:
 		o.HostsOptions = &HostsUpstreamOptions{}
 		data = o.HostsOptions
+	case DHCPUpstreamType:
+		o.DHCPOptions = &DHCPUpstreamOptions{}
+		data = o.DHCPOptions
 	case RandomUpstreamType:
 		o.RandomOptions = &RandomUpstreamOptions{}
 		data = o.RandomOptions
@@ -152,6 +156,8 @@ func NewUpstream(ctx context.Context, core adapter.Core, logger log.Logger, tag 
 	case HostsUpstreamType:
 		noGeneric = true
 		u, err = NewHostsUpstream(ctx, core, logger, tag, *options.HostsOptions)
+	case DHCPUpstreamType:
+		u, err = NewDHCPUpstream(ctx, core, logger, tag, *options.DHCPOptions)
 	case RandomUpstreamType:
 		noGeneric = true
 		u, err = NewRandomUpstream(ctx, core, logger, tag, *options.RandomOptions)
