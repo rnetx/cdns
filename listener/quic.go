@@ -228,11 +228,11 @@ func (l *QUICListener) serveStream(quicConn quic.Connection, stream quic.Stream,
 		l.logger.Errorf("unpack dns message failed: client address: %s, error: %s", clientAddr.String(), err)
 		return
 	}
-	id := dns.Id()
-	req.Id = id // DOQ
+	oldID := req.Id
+	req.Id = dns.Id() // DOQ
 	resp := l.Handle(l.ctx, req, clientAddr)
 	if resp != nil {
-		resp.Id = id // DOQ
+		resp.Id = oldID // DOQ
 		raw, err := resp.Pack()
 		if err != nil {
 			l.logger.Debugf("pack dns message failed: client address: %s, error: %s", clientAddr.String(), err)

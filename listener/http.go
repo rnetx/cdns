@@ -222,10 +222,6 @@ func (l *HTTPListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	clientAddr := netip.AddrPortFrom(addr, 0)
-	if r.Header.Get("Content-Type") != "application/dns-message" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
 	if r.Method != http.MethodPost && r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -233,6 +229,10 @@ func (l *HTTPListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var req *dns.Msg
 	switch r.Method {
 	case http.MethodPost:
+		if r.Header.Get("Content-Type") != "application/dns-message" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		buffer := bytes.NewBuffer(nil)
 		_, err := buffer.ReadFrom(r.Body)
 		r.Body.Close()
@@ -264,18 +264,18 @@ func (l *HTTPListener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	id := dns.Id()
-	req.Id = id // DOH
+	oldID := req.Id
+	req.Id = dns.Id() // DOH
 	resp := l.Handle(l.ctx, req, clientAddr)
 	if resp != nil {
-		resp.Id = id // DOH
+		resp.Id = oldID // DOH
 		raw, err := resp.Pack()
 		if err != nil {
 			l.logger.Debugf("pack dns message failed: client address: %s, error: %s", clientAddr.String(), err)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/dns-message")
+		w.WriteHeader(http.StatusOK)
 		w.Write(raw)
 	} else {
 		w.WriteHeader(http.StatusNoContent)
