@@ -7,7 +7,7 @@ import (
 
 type TaskGroup struct {
 	ctx      context.Context
-	n        *atomic.Int64
+	n        *atomic.Int32
 	doneCtx  context.Context
 	doneFunc context.CancelFunc
 }
@@ -15,7 +15,7 @@ type TaskGroup struct {
 func NewTaskGroupWithContext(ctx context.Context) *TaskGroup {
 	g := &TaskGroup{
 		ctx: ctx,
-		n:   &atomic.Int64{},
+		n:   &atomic.Int32{},
 	}
 	g.doneCtx, g.doneFunc = context.WithCancel(g.ctx)
 	g.n.Add(1)

@@ -317,7 +317,7 @@ func (u *QUICUpstream) StatisticalData() map[string]any {
 }
 
 type quicConnection struct {
-	n         *atomic.Int64
+	n         *atomic.Int32
 	lastUse   time.Time
 	inner     quic.Connection
 	closeFunc func()
@@ -325,7 +325,7 @@ type quicConnection struct {
 
 func newQUICConnection(inner quic.Connection, closeFunc func()) *quicConnection {
 	c := &quicConnection{
-		n:         &atomic.Int64{},
+		n:         &atomic.Int32{},
 		lastUse:   time.Now(),
 		inner:     inner,
 		closeFunc: closeFunc,

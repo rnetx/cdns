@@ -4,12 +4,12 @@ import "sync/atomic"
 
 type SafeChan[T any] struct {
 	ch chan T
-	n  *atomic.Int64
+	n  *atomic.Int32
 }
 
 func NewSafeChan[T any](size int) *SafeChan[T] {
 	c := &SafeChan[T]{
-		n: &atomic.Int64{},
+		n: &atomic.Int32{},
 	}
 	c.n.Add(1)
 	if size == 0 {

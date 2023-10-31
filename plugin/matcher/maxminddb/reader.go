@@ -18,7 +18,7 @@ const (
 type Reader struct {
 	dataType string
 	reader   *maxminddb.Reader
-	n        *atomic.Int64
+	n        *atomic.Int32
 }
 
 func OpenMaxmindDBReader(path string, dataType string) (*Reader, error) {
@@ -43,7 +43,7 @@ func OpenMaxmindDBReader(path string, dataType string) (*Reader, error) {
 	reader := &Reader{
 		dataType: dataType,
 		reader:   db,
-		n:        &atomic.Int64{},
+		n:        &atomic.Int32{},
 	}
 	reader.n.Add(1)
 	return reader, nil

@@ -15,7 +15,7 @@ import (
 type DNSPipelineConn struct {
 	conn      dns.Conn
 	lastUse   *atomic.Int64
-	n         *atomic.Int64
+	n         *atomic.Int32
 	chMap     *sync.Map
 	ctx       context.Context
 	cancel    context.CancelFunc
@@ -29,7 +29,7 @@ func NewDNSPipelineConn(ctx context.Context, udpSize uint16, conn net.Conn, clos
 	c := &DNSPipelineConn{
 		conn:      dns.Conn{Conn: conn},
 		lastUse:   &atomic.Int64{},
-		n:         &atomic.Int64{},
+		n:         &atomic.Int32{},
 		chMap:     &sync.Map{},
 		ctx:       ctx,
 		cancel:    cancel,
