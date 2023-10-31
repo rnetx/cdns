@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
@@ -59,6 +60,10 @@ func (c *SimpleCore) Run() error {
 }
 
 func (c *SimpleCore) Close() error {
+	return nil
+}
+
+func (c *SimpleCore) GetTimeFunc() func() time.Time {
 	return nil
 }
 

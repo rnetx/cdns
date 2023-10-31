@@ -11,6 +11,7 @@ import (
 	"github.com/rnetx/cdns/api"
 	"github.com/rnetx/cdns/listener"
 	"github.com/rnetx/cdns/log"
+	"github.com/rnetx/cdns/ntp"
 	"github.com/rnetx/cdns/plugin"
 	"github.com/rnetx/cdns/plugin/executor"
 	"github.com/rnetx/cdns/plugin/matcher"
@@ -46,6 +47,8 @@ type Core struct {
 	pluginMatcherMap  map[string]adapter.PluginMatcher
 	pluginExecutors   []adapter.PluginExecutor
 	pluginExecutorMap map[string]adapter.PluginExecutor
+	//
+	ntpServer *ntp.NTPServer
 }
 
 func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, error) {
@@ -207,6 +210,14 @@ func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, er
 			return nil, nil, fmt.Errorf("create api server failed: %s", err)
 		}
 	}
+	if options.NTP != nil {
+		ntpServerLogger := log.NewTagLogger(c.rootLogger, "ntp", aurora.CyanFg)
+		ntpServer, err := ntp.NewNTPServer(c.ctx, c, ntpServerLogger, *options.NTP)
+		if err != nil {
+			return nil, nil, err
+		}
+		c.ntpServer = ntpServer
+	}
 	return c, c.coreLogger, nil
 }
 
@@ -250,6 +261,23 @@ func (c *Core) Run() error {
 			}
 		}
 		upstreamStack.Push(u)
+	}
+	// NTP
+	if c.ntpServer != nil {
+		err = c.ntpServer.Start()
+		if err != nil {
+			err = fmt.Errorf("start ntp server failed: %s", err)
+			c.rootLogger.Fatal(err)
+			return err
+		}
+		defer func() {
+			err := c.ntpServer.Close()
+			if err != nil {
+				c.coreLogger.Errorf("close ntp server failed: %s", err)
+			} else {
+				c.coreLogger.Infof("close ntp server success")
+			}
+		}()
 	}
 	if len(c.pluginMatchers) > 0 {
 		pluginMatcherStack := utils.NewStack[adapter.PluginMatcher](len(c.pluginMatchers))
@@ -367,6 +395,17 @@ func (c *Core) Run() error {
 	c.coreLogger.Infof("core is started, cost: %dms", duration.Milliseconds())
 	<-c.ctx.Done()
 	c.coreLogger.Info("core is stopping...")
+	return nil
+}
+
+func (c *Core) RootLogger() log.Logger {
+	return c.rootLogger
+}
+
+func (c *Core) GetTimeFunc() func() time.Time {
+	if c.ntpServer != nil {
+		return c.ntpServer.TimeFunc()
+	}
 	return nil
 }
 

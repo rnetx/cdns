@@ -104,6 +104,7 @@ func NewTLSUpstream(ctx context.Context, core adapter.Core, logger log.Logger, t
 	if err != nil {
 		return nil, fmt.Errorf("create tls upstream failed: create tls config: %s", err)
 	}
+	tlsConfig.Time = core.GetTimeFunc()
 	if tlsConfig.ServerName == "" {
 		if u.address.IsDomain() {
 			tlsConfig.ServerName = u.address.Domain()

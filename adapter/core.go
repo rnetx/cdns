@@ -1,5 +1,7 @@
 package adapter
 
+import "time"
+
 type Core interface {
 	Closer
 	Run() error
@@ -13,4 +15,5 @@ type Core interface {
 	GetPluginMatchers() []PluginMatcher
 	GetPluginExecutor(tag string) PluginExecutor
 	GetPluginExecutors() []PluginExecutor
+	GetTimeFunc() func() time.Time
 }

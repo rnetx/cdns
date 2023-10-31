@@ -5,6 +5,8 @@ log:
 
 api:
 
+ntp:
+
 upstreams:
 
 plugin-matchers:
@@ -23,6 +25,10 @@ listeners:
 ### ```api```
 
 ```HTTP API``` 配置
+
+### ```ntp```
+
+```NTP``` 服务器配置
 
 ### ```upstreams```
 

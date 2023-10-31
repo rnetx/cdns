@@ -5,7 +5,6 @@ upstreams:
     - tag: upstream
       type: dhcp
       interface: eth0 # 绑定的网卡，留空自动选择，可能会失败
-      # flush-interval: 0s # 自动更新时间间隔
       #
       # 以下配置是创建 UDP DNS 服务器时使用配置
       #

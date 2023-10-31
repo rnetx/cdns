@@ -28,6 +28,7 @@ type SimpleLogger struct {
 	_level           Level
 	disableTimestamp bool
 	_disableColor    bool
+	timeFunc         func() time.Time
 	Logger
 }
 
@@ -56,7 +57,7 @@ func (l *SimpleLogger) print(level Level, msg string) {
 	}
 	m := ""
 	if !l.disableTimestamp {
-		m += fmt.Sprintf("[%s] ", time.Now().Format(time.DateTime))
+		m += fmt.Sprintf("[%s] ", l.timeNow().Format(time.DateTime))
 	}
 	if !l._disableColor {
 		m += fmt.Sprintf("[%s] ", level.ColorString())
@@ -73,7 +74,7 @@ func (l *SimpleLogger) printContext(ctx context.Context, level Level, msg string
 	}
 	m := ""
 	if !l.disableTimestamp {
-		m += fmt.Sprintf("[%s] ", time.Now().Format(time.DateTime))
+		m += fmt.Sprintf("[%s] ", l.timeNow().Format(time.DateTime))
 	}
 	if !l._disableColor {
 		m += fmt.Sprintf("[%s] ", level.ColorString())
@@ -90,4 +91,16 @@ func (l *SimpleLogger) printContext(ctx context.Context, level Level, msg string
 	}
 	m += msg
 	fmt.Fprintln(l.writer, m)
+}
+
+func (l *SimpleLogger) SetTimeFunc(f func() time.Time) {
+	l.timeFunc = f
+}
+
+func (l *SimpleLogger) timeNow() time.Time {
+	timeFunc := l.timeFunc
+	if timeFunc == nil {
+		timeFunc = time.Now
+	}
+	return timeFunc()
 }

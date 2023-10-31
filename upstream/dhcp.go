@@ -22,7 +22,6 @@ import (
 type DHCPUpstreamOptions struct {
 	Interface          string         `yaml:"interface"`
 	UseIPv6            bool           `yaml:"use-ipv6,omitempty"`
-	FlushInterval      utils.Duration `yaml:"flush-interval,omitempty"`
 	ConnectTimeout     utils.Duration `yaml:"connect-timeout,omitempty"`
 	IdleTimeout        utils.Duration `yaml:"idle-timeout,omitempty"`
 	EDNS0              bool           `yaml:"edns0,omitempty"`
@@ -60,7 +59,8 @@ type DHCPUpstream struct {
 	disableFallbackTCP bool
 	enablePipeline     bool
 
-	flushInterval     time.Duration
+	oldInterfaceName  string
+	oldInterfaceIndex int
 	fetchCtx          context.Context
 	fetchCancel       context.CancelFunc
 	fetchTaskGroup    *utils.TaskGroup
@@ -90,9 +90,6 @@ func NewDHCPUpstream(ctx context.Context, core adapter.Core, logger log.Logger, 
 	} else {
 		u.idleTimeout = DefaultIdleTimeout
 	}
-	if options.FlushInterval > 0 {
-		u.flushInterval = time.Duration(options.FlushInterval)
-	}
 	u.disableFallbackTCP = options.DisableFallbackTCP
 	u.enablePipeline = options.EnablePipeline
 	u.edns0 = options.EDNS0
@@ -116,19 +113,15 @@ func (u *DHCPUpstream) Start() error {
 	if err != nil {
 		return fmt.Errorf("start dhcp upstream failed: %s", err)
 	}
-	if u.flushInterval > 0 {
-		u.fetchCtx, u.fetchCancel = context.WithCancel(u.ctx)
-		u.fetchTaskGroup = utils.NewTaskGroup()
-		go u.loopFetch()
-	}
+	u.fetchCtx, u.fetchCancel = context.WithCancel(u.ctx)
+	u.fetchTaskGroup = utils.NewTaskGroup()
+	go u.loopFetch()
 	return nil
 }
 
 func (u *DHCPUpstream) Close() error {
-	if u.flushInterval > 0 {
-		u.fetchCancel()
-		<-u.fetchTaskGroup.Wait()
-	}
+	u.fetchCancel()
+	<-u.fetchTaskGroup.Wait()
 	for _, uu := range u.upstreamMap {
 		closer, isCloser := uu.(adapter.Closer)
 		if isCloser {
@@ -144,7 +137,7 @@ func (u *DHCPUpstream) Close() error {
 }
 
 func (u *DHCPUpstream) loopFetch() {
-	ticker := time.NewTicker(u.flushInterval)
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -166,12 +159,6 @@ func (u *DHCPUpstream) loopFetch() {
 }
 
 func (u *DHCPUpstream) fetchDNSUpstream(ctx context.Context) error {
-	u.logger.Debug("flush dns upstream...")
-	defer u.logger.Debug("flush dns upstream done")
-	return u.fetchDNSUpstream4(ctx)
-}
-
-func (u *DHCPUpstream) fetchDNSUpstream4(ctx context.Context) error {
 	var (
 		iface *net.Interface
 		err   error
@@ -181,13 +168,29 @@ func (u *DHCPUpstream) fetchDNSUpstream4(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		u.logger.Debugf("auto get interface: %s", iface.Name)
 	} else {
 		iface, err = net.InterfaceByName(u.interfaceName)
 	}
 	if err != nil {
 		return err
 	}
+	if iface.Name == u.oldInterfaceName && iface.Index == u.oldInterfaceIndex {
+		return nil
+	}
+	if u.interfaceName == "" {
+		u.logger.Debugf("auto get interface: %s", iface.Name)
+	}
+	u.logger.Debug("flush dns upstream...")
+	defer u.logger.Debug("flush dns upstream done")
+	err = u.fetchDNSUpstream4(ctx, iface)
+	if err == nil {
+		u.oldInterfaceName = iface.Name
+		u.oldInterfaceIndex = iface.Index
+	}
+	return err
+}
+
+func (u *DHCPUpstream) fetchDNSUpstream4(ctx context.Context, iface *net.Interface) error {
 	listenAddr := "0.0.0.0:68"
 	if runtime.GOOS == "linux" || runtime.GOOS == "android" {
 		listenAddr = "255.255.255.255:68"

@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 type Logger interface {
@@ -32,6 +33,10 @@ type Logger interface {
 	FatalfContext(ctx context.Context, format string, args ...interface{})
 
 	basicLogger() basicLogger
+}
+
+type SetTimeFuncInterface interface {
+	SetTimeFunc(func() time.Time)
 }
 
 type basicLogger interface {
