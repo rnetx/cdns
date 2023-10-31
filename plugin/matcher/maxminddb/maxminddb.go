@@ -29,7 +29,13 @@ type Args struct {
 }
 
 type runningArgs struct {
-	Code utils.Listable[string] `json:"code"`
+	Code        utils.Listable[string] `json:"code"`
+	UseClientIP bool                   `json:"use-client-ip"`
+}
+
+type runningArgItem struct {
+	code        map[string]struct{}
+	useClientIP bool
 }
 
 var (
@@ -43,7 +49,7 @@ type MaxmindDB struct {
 	ctx            context.Context
 	tag            string
 	logger         log.Logger
-	runningArgsMap map[uint16]map[string]struct{}
+	runningArgsMap map[uint16]runningArgItem
 
 	path     string
 	dataType string
@@ -107,6 +113,7 @@ func (m *MaxmindDB) loadRule() error {
 
 func (m *MaxmindDB) LoadRunningArgs(_ context.Context, args any) (uint16, error) {
 	var codes utils.Listable[string]
+	var useClientIP bool
 	err := utils.JsonDecode(args, &codes)
 	if err != nil {
 		var a runningArgs
@@ -115,6 +122,7 @@ func (m *MaxmindDB) LoadRunningArgs(_ context.Context, args any) (uint16, error)
 			return 0, fmt.Errorf("%w | %w", err, err2)
 		}
 		codes = a.Code
+		useClientIP = a.UseClientIP
 	}
 	if len(codes) == 0 {
 		return 0, fmt.Errorf("missing code")
@@ -128,7 +136,7 @@ func (m *MaxmindDB) LoadRunningArgs(_ context.Context, args any) (uint16, error)
 		}
 	}
 	if m.runningArgsMap == nil {
-		m.runningArgsMap = make(map[uint16]map[string]struct{})
+		m.runningArgsMap = make(map[uint16]runningArgItem)
 	}
 	var id uint16
 	for {
@@ -137,11 +145,34 @@ func (m *MaxmindDB) LoadRunningArgs(_ context.Context, args any) (uint16, error)
 			break
 		}
 	}
-	m.runningArgsMap[id] = codeMap
+	m.runningArgsMap[id] = runningArgItem{
+		code:        codeMap,
+		useClientIP: useClientIP,
+	}
 	return id, nil
 }
 
 func (m *MaxmindDB) Match(ctx context.Context, dnsCtx *adapter.DNSContext, argsID uint16) (bool, error) {
+	reader := m.reader
+	if reader != nil {
+		reader = reader.Clone()
+	}
+	defer reader.Close()
+	codeItem := m.runningArgsMap[argsID]
+	if codeItem.useClientIP {
+		clientIP := dnsCtx.ClientIP()
+		codes := reader.Lookup(clientIP)
+		if len(codes) > 0 {
+			for _, code := range codes {
+				_, ok := codeItem.code[code]
+				if ok {
+					m.logger.DebugfContext(ctx, "match code: %s", code)
+					return true, nil
+				}
+			}
+		}
+		return false, nil
+	}
 	respMsg := dnsCtx.RespMsg()
 	if respMsg == nil {
 		m.logger.DebugfContext(ctx, "resp msg is nil")
@@ -166,17 +197,11 @@ func (m *MaxmindDB) Match(ctx context.Context, dnsCtx *adapter.DNSContext, argsI
 		m.logger.DebugfContext(ctx, "no ips found")
 		return false, nil
 	}
-	reader := m.reader
-	if reader != nil {
-		reader = reader.Clone()
-	}
-	defer reader.Close()
-	codeMap := m.runningArgsMap[argsID]
 	for _, ip := range ips {
 		codes := reader.Lookup(ip)
 		if len(codes) > 0 {
 			for _, code := range codes {
-				_, ok := codeMap[code]
+				_, ok := codeItem.code[code]
 				if ok {
 					m.logger.DebugfContext(ctx, "match code: %s", code)
 					return true, nil
