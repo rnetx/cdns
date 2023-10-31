@@ -34,11 +34,12 @@ func (r *RuleOptions) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		isMatchOr  = o.MatchOr != nil
 		isMatchAnd = o.MatchAnd != nil
 		isExec     = o.Exec != nil
+		isElseExec = o.ElseExec != nil
 	)
 	switch {
-	case isMatchOr && isExec:
+	case isMatchOr && (isExec || isElseExec):
 		r.rule = &RuleMatchOr{}
-	case isMatchAnd && isExec:
+	case isMatchAnd && (isExec || isElseExec):
 		r.rule = &RuleMatchAnd{}
 	case isExec:
 		r.rule = &RuleExec{}
