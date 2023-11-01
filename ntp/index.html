@@ -12,28 +12,28 @@
         <meta name="author" content="yaotthaha">
       
       
-        <link rel="canonical" href="https://github.com/rnetx/cdns/plugin/matcher/ip/">
+        <link rel="canonical" href="https://github.com/rnetx/cdns/ntp/">
       
       
-        <link rel="prev" href="../domain/">
+        <link rel="prev" href="../api/api/">
       
       
-        <link rel="next" href="../script/">
+        <link rel="next" href="../upstream/">
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.6">
     
     
       
-        <title>ip - cdns</title>
+        <title>NTP 服务器配置 (NTP) - cdns</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.35e1ed30.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.35e1ed30.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.356b1318.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.356b1318.min.css">
       
       
 
@@ -52,7 +52,7 @@
       
     
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -81,7 +81,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ip" class="md-skip">
+        <a href="#ntp" class="md-skip">
           Skip to content
         </a>
       
@@ -95,7 +95,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="cdns" class="md-header__button md-logo" aria-label="cdns" data-md-component="logo">
+    <a href=".." title="cdns" class="md-header__button md-logo" aria-label="cdns" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ip
+              NTP 服务器配置 (NTP)
             
           </span>
         </div>
@@ -217,17 +217,21 @@
         
   
   
+    
+  
   
     
     
       
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../.." class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href=".." class="md-tabs__link">
           
   
     
@@ -246,13 +250,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../plugin/matcher/" class="md-tabs__link">
           
   
     
@@ -272,7 +274,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../executor/" class="md-tabs__link">
+        <a href="../plugin/executor/" class="md-tabs__link">
           
   
     
@@ -309,7 +311,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="cdns" class="md-nav__button md-logo" aria-label="cdns" data-md-component="logo">
+    <a href=".." title="cdns" class="md-nav__button md-logo" aria-label="cdns" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -336,6 +338,8 @@
       
   
   
+    
+  
   
     
     
@@ -363,14 +367,12 @@
       
       
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
         
           
           <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
@@ -384,7 +386,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             基本配置
@@ -424,7 +426,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../.." class="md-nav__link ">
+            <a href=".." class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -456,7 +458,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../example/" class="md-nav__link">
+      <a href="../example/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -484,7 +486,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../global/" class="md-nav__link">
+      <a href="../global/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -504,7 +506,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../log/log/" class="md-nav__link">
+      <a href="../log/log/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -524,7 +526,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/api/" class="md-nav__link">
+      <a href="../api/api/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -542,9 +544,18 @@
                 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../../ntp/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -553,6 +564,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -609,7 +621,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../upstream/" class="md-nav__link ">
+            <a href="../upstream/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -641,7 +653,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../upstream/tcp/" class="md-nav__link">
+      <a href="../upstream/tcp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -661,7 +673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../upstream/udp/" class="md-nav__link">
+      <a href="../upstream/udp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -681,7 +693,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../upstream/tls/" class="md-nav__link">
+      <a href="../upstream/tls/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -701,7 +713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../upstream/https/" class="md-nav__link">
+      <a href="../upstream/https/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -721,7 +733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../upstream/quic/" class="md-nav__link">
+      <a href="../upstream/quic/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -741,7 +753,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../upstream/parallel/" class="md-nav__link">
+      <a href="../upstream/parallel/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -761,7 +773,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../upstream/random/" class="md-nav__link">
+      <a href="../upstream/random/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -781,7 +793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../upstream/querytest/" class="md-nav__link">
+      <a href="../upstream/querytest/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -801,7 +813,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../upstream/hosts/" class="md-nav__link">
+      <a href="../upstream/hosts/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -821,7 +833,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../upstream/dhcp/" class="md-nav__link">
+      <a href="../upstream/dhcp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -884,7 +896,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../listener/" class="md-nav__link ">
+            <a href="../listener/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -916,7 +928,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../listener/tcp/" class="md-nav__link">
+      <a href="../listener/tcp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -936,7 +948,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../listener/udp/" class="md-nav__link">
+      <a href="../listener/udp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -956,7 +968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../listener/tls/" class="md-nav__link">
+      <a href="../listener/tls/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -976,7 +988,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../listener/http/" class="md-nav__link">
+      <a href="../listener/http/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -996,7 +1008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../listener/quic/" class="md-nav__link">
+      <a href="../listener/quic/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1053,7 +1065,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../workflow/" class="md-nav__link ">
+            <a href="../workflow/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1085,7 +1097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../workflow/matcher/" class="md-nav__link">
+      <a href="../workflow/matcher/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1105,7 +1117,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../workflow/executor/" class="md-nav__link">
+      <a href="../workflow/executor/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1138,8 +1150,6 @@
       
   
   
-    
-  
   
     
     
@@ -1165,17 +1175,19 @@
       
       
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../plugin/matcher/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1192,7 +1204,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             匹配器插件
@@ -1207,7 +1219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../geosite/" class="md-nav__link">
+      <a href="../plugin/matcher/geosite/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1227,7 +1239,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../maxminddb/" class="md-nav__link">
+      <a href="../plugin/matcher/maxminddb/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1247,7 +1259,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../domain/" class="md-nav__link">
+      <a href="../plugin/matcher/domain/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1265,29 +1277,9 @@
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    ip
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../plugin/matcher/ip/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1296,33 +1288,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#api" class="md-nav__link">
-    API
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1334,7 +1299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../script/" class="md-nav__link">
+      <a href="../plugin/matcher/script/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1396,7 +1361,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../executor/" class="md-nav__link ">
+            <a href="../plugin/executor/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1428,7 +1393,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../executor/memcache/" class="md-nav__link">
+      <a href="../plugin/executor/memcache/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1448,7 +1413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../executor/rediscache/" class="md-nav__link">
+      <a href="../plugin/executor/rediscache/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1468,7 +1433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../executor/script/" class="md-nav__link">
+      <a href="../plugin/executor/script/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1488,7 +1453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../executor/ecs/" class="md-nav__link">
+      <a href="../plugin/executor/ecs/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1508,7 +1473,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../executor/ipset/" class="md-nav__link">
+      <a href="../plugin/executor/ipset/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1547,34 +1512,21 @@
   
 
 
-<h1 id="ip"><a class="toclink" href="#ip">IP 匹配</a><a class="headerlink" href="#ip" title="Permanent link">&para;</a></h1>
-<p><code>IP</code> 匹配器可以灵活匹配返回的 <code>IP</code>，提供比 <code>resp-ip</code> 更灵活的规则机制</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">plugin-matchers</span><span class="p">:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plugin</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ip</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">      </span><span class="nt">args</span><span class="p">:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">        </span><span class="nt">rule</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;192.168.1.1&#39;</span><span class="w"> </span><span class="c1"># 匹配规则</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">        </span><span class="c1"># rule:</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">        </span><span class="c1">#   - &#39;192.168.1.1&#39;</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">        </span><span class="c1">#   - &#39;192.168.1.0/24&#39;</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">        </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/rule</span><span class="w"> </span><span class="c1"># 规则文件</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">        </span><span class="c1"># file:</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">        </span><span class="c1">#   - /path/to/file1</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">        </span><span class="c1">#   - /path/to/file2</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="nt">workflows</span><span class="p">:</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">      </span><span class="nt">rules</span><span class="p">:</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">match-and</span><span class="p">:</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">plugin</span><span class="p">:</span>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">                </span><span class="nt">tag</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">plugin</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">          </span><span class="nt">exec</span><span class="p">:</span>
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">            </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+<h1 id="ntp"><a class="toclink" href="#ntp">NTP 服务器</a><a class="headerlink" href="#ntp" title="Permanent link">&para;</a></h1>
+<p>当本地服务器因某些原因无法校准正确的时间，而 <code>Upstream</code> 中含有使用 <code>TLS</code> 的 <code>Upstream</code> ，在建立连接时会因为时间不准确而失败，可以通过 NTP 服务器来校准时间。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">ntp</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ntp.aliyun.com</span><span class="w"> </span><span class="c1"># NTP 服务器地址，支持域名|域名:端口|IP|IP:端口，若服务器地址是域名，必须设置 upstream</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="c1"># interval: 600s # 校准时间间隔，默认 30min</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="c1"># upstream: upstream # 上游服务器标签，用于解析 NTP 服务器地址，仅支持 TCP/UDP ，或者不需要依赖（间接依赖）TLS 的其他上游服务器，配置错误会导致回环，谨慎配置！</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span><span class="c1"># write-to-system: false # 是否将时间写入系统中，仅支持 Unix 或 Windows 系统，可能需要系统高级权限</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="c1">#</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="c1"># 以下配置用于 NTP 请求，可选</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">  </span><span class="c1">#</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="c1"># bind-interface: eth0 # 绑定网卡</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="c1"># bind-ipv4: 0.0.0.0 # 绑定本地 IPv4 地址</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="c1"># bind-ipv6: :: # 绑定本地 IPv6 地址</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span><span class="c1"># so-mark: 255 # 设置 SO_MARK (Linux)</span>
 </code></pre></div>
-<h3 id="api"><a class="toclink" href="#api">API</a><a class="headerlink" href="#api" title="Permanent link">&para;</a></h3>
-<p>GET /reload</p>
-<p>重新加载规则文件</p>
-<p>返回状态：204</p>
 
 
 
@@ -1613,10 +1565,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.sections", "navigation.path", "navigation.expand", "navigation.indexes", "navigation.tabs", "toc.follow", "toc.integrate", "header.autohide"], "search": "../../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.path", "navigation.expand", "navigation.indexes", "navigation.tabs", "toc.follow", "toc.integrate", "header.autohide"], "search": "../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.aecac24b.min.js"></script>
+      <script src="../assets/javascripts/bundle.aecac24b.min.js"></script>
       
     
   </body>
