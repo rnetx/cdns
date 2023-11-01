@@ -95,7 +95,8 @@ func (s *NTPServer) Start() error {
 	if err != nil {
 		return fmt.Errorf("update ntp failed: %w", err)
 	} else {
-		s.logger.Infof("update ntp success, time now: %s", time.Now().Add(s.clockOffset).Format(time.DateTime))
+		offset := s.clockOffset
+		s.logger.Infof("update ntp success, time now: %s, offset: %s", time.Now().Add(offset).Format(time.DateTime), offset.String())
 	}
 	s.loopCtx, s.loopCancel = context.WithCancel(s.ctx)
 	s.closeDone = make(chan struct{}, 1)
