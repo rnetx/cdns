@@ -2,11 +2,10 @@ package domain
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"unicode/utf8"
-
-	"github.com/dlclark/regexp2"
 )
 
 type DomainSetBuilder struct {
@@ -50,9 +49,9 @@ func (b *DomainSetBuilder) AddRegexp(regexp string) {
 }
 
 type DomainSet struct {
-	trie     *succinctSet      // full && suffix
-	keywords []string          // keyword
-	regexps  []*regexp2.Regexp // regex
+	trie     *succinctSet     // full && suffix
+	keywords []string         // keyword
+	regexps  []*regexp.Regexp // regex
 }
 
 func (b *DomainSetBuilder) Build() (*DomainSet, error) {
@@ -61,9 +60,9 @@ func (b *DomainSetBuilder) Build() (*DomainSet, error) {
 		s.keywords = b.keywords
 	}
 	if len(b.regexps) > 0 {
-		s.regexps = make([]*regexp2.Regexp, len(b.regexps))
+		s.regexps = make([]*regexp.Regexp, len(b.regexps))
 		for i, r := range b.regexps {
-			regex, err := regexp2.Compile(r, regexp2.None) // Disable RE2
+			regex, err := regexp.Compile(r)
 			if err != nil {
 				return nil, fmt.Errorf("compile regexp %s failed: %v", r, err)
 			}
@@ -131,13 +130,8 @@ func (d *DomainSet) Match(domain string) bool {
 		}
 	}
 	if d.regexps != nil {
-		var (
-			match bool
-			err   error
-		)
 		for _, regex := range d.regexps {
-			match, err = regex.MatchString(domain)
-			if err == nil && match {
+			if regex.MatchString(domain) {
 				return true
 			}
 		}
