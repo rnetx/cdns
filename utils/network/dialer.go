@@ -5,10 +5,10 @@ import (
 	"net"
 	"net/netip"
 
-	"github.com/rnetx/cdns/upstream/network/basic"
-	"github.com/rnetx/cdns/upstream/network/common"
-	"github.com/rnetx/cdns/upstream/network/socks5"
 	"github.com/rnetx/cdns/utils"
+	"github.com/rnetx/cdns/utils/network/basic"
+	"github.com/rnetx/cdns/utils/network/common"
+	"github.com/rnetx/cdns/utils/network/socks5"
 )
 
 type Options struct {

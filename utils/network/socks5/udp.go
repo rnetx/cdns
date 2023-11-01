@@ -6,7 +6,7 @@ import (
 	"net"
 	"syscall"
 
-	"github.com/rnetx/cdns/upstream/network/common"
+	"github.com/rnetx/cdns/utils/network/common"
 )
 
 // +----+------+------+----------+----------+----------+

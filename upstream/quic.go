@@ -15,9 +15,9 @@ import (
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/upstream/bootstrap"
-	"github.com/rnetx/cdns/upstream/network"
-	"github.com/rnetx/cdns/upstream/network/common"
 	"github.com/rnetx/cdns/utils"
+	"github.com/rnetx/cdns/utils/network"
+	"github.com/rnetx/cdns/utils/network/common"
 
 	"github.com/miekg/dns"
 	"github.com/quic-go/quic-go"

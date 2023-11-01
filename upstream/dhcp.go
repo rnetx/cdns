@@ -11,9 +11,9 @@ import (
 
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
-	"github.com/rnetx/cdns/upstream/network/basic/control"
-	"github.com/rnetx/cdns/upstream/network/netinterface"
 	"github.com/rnetx/cdns/utils"
+	"github.com/rnetx/cdns/utils/network/basic/control"
+	"github.com/rnetx/cdns/utils/network/netinterface"
 
 	"github.com/insomniacslk/dhcp/dhcpv4"
 	"github.com/miekg/dns"

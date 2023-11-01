@@ -6,7 +6,7 @@ import (
 	"net"
 	"net/netip"
 
-	"github.com/rnetx/cdns/upstream/network/common"
+	"github.com/rnetx/cdns/utils/network/common"
 )
 
 type Options struct {

@@ -10,9 +10,9 @@ import (
 	"github.com/rnetx/cdns/adapter"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/upstream"
-	"github.com/rnetx/cdns/upstream/network"
-	"github.com/rnetx/cdns/upstream/network/socks5"
 	"github.com/rnetx/cdns/utils"
+	"github.com/rnetx/cdns/utils/network"
+	"github.com/rnetx/cdns/utils/network/socks5"
 
 	"github.com/logrusorgru/aurora/v4"
 	"github.com/miekg/dns"

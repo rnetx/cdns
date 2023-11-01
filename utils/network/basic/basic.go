@@ -7,8 +7,8 @@ import (
 	"net/netip"
 	"syscall"
 
-	"github.com/rnetx/cdns/upstream/network/basic/control"
-	"github.com/rnetx/cdns/upstream/network/common"
+	"github.com/rnetx/cdns/utils/network/basic/control"
+	"github.com/rnetx/cdns/utils/network/common"
 )
 
 type Options struct {

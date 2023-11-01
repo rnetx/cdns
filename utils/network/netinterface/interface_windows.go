@@ -5,7 +5,7 @@ package netinterface
 import (
 	"net"
 
-	"github.com/rnetx/cdns/upstream/network/netinterface/internal/winipcfg"
+	"github.com/rnetx/cdns/utils/network/netinterface/internal/winipcfg"
 
 	"golang.org/x/sys/windows"
 )

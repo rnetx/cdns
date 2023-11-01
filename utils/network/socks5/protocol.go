@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/netip"
 
-	"github.com/rnetx/cdns/upstream/network/common"
+	"github.com/rnetx/cdns/utils/network/common"
 )
 
 const (
