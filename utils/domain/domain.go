@@ -117,7 +117,7 @@ func reverseDomainSuffix(domain string) string {
 }
 
 func (d *DomainSet) Match(domain string) bool {
-	domain = strings.Trim(domain, ".")
+	domain = strings.TrimSuffix(domain, ".")
 	if d.trie != nil {
 		if d.trie.Has(reverseDomain(domain)) {
 			return true
