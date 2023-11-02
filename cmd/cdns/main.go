@@ -7,6 +7,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/rnetx/cdns/constant"
 	"github.com/rnetx/cdns/core"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/plugin"
@@ -51,7 +52,7 @@ func run() int {
 		log.DefaultLogger.Error(err)
 		return 1
 	}
-	coreLogger.Infof("cdns %s (%s)", Version, Author)
+	coreLogger.Infof("cdns %s", constant.Version)
 	coreLogger.Infof("plugin matcher: %s", strings.Join(plugin.PluginMatcherTypes(), ", "))
 	coreLogger.Infof("plugin executor: %s", strings.Join(plugin.PluginExecutorTypes(), ", "))
 	go signalHandle(cancel, coreLogger)

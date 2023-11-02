@@ -10,7 +10,7 @@ mkdir build
 
 build() {
   filename=$1
-  go build -o ./${filename} -v -trimpath -ldflags "-X 'github.com/rnetx/cdns/cmd/cdns.Version=${VERSION}' -s -w -buildid=" .
+  go build -o ./${filename} -v -trimpath -ldflags "-X 'github.com/rnetx/cdns/constant.Version=${VERSION}' -s -w -buildid=" .
   tar -czf ./build/${filename}.tar.gz ${filename} LICENSE README.md
   rm -rf ./${filename}
   sha256sum ./build/${filename}.tar.gz > ./build/${filename}.tar.gz.sha256
@@ -19,7 +19,7 @@ build() {
 
 build_windows() {
   filename=$1
-  go build -o ./${filename}.exe -v -trimpath -ldflags "-X 'github.com/rnetx/cdns/cmd/cdns.Version=${VERSION}' -s -w -buildid=" .
+  go build -o ./${filename}.exe -v -trimpath -ldflags "-X 'github.com/rnetx/cdns/constant.Version=${VERSION}' -s -w -buildid=" .
   zip ./build/${filename}.zip ${filename}.exe LICENSE README.md
   rm -rf ./${filename}.exe
   sha256sum ./build/${filename}.zip > ./build/${filename}.zip.sha256

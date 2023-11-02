@@ -3,7 +3,7 @@ NAME = cdns
 TAGS = $(shell git describe --tags --long)
 
 build:
-	@go build -ldflags "-s -w -X 'github.com/rnetx/cdns/cmd/cdns.Version=$(TAGS)' -buildid=" -o $(NAME) -v .
+	@go build -ldflags "-s -w -X 'github.com/rnetx/cdns/constant.Version=$(TAGS)' -buildid=" -o $(NAME) -v .
 
 fmt:
 	@gofumpt -l -w .

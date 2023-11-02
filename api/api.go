@@ -12,7 +12,9 @@ import (
 	"strings"
 
 	"github.com/rnetx/cdns/adapter"
+	"github.com/rnetx/cdns/constant"
 	"github.com/rnetx/cdns/log"
+	"github.com/rnetx/cdns/plugin"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -82,6 +84,24 @@ func parseListen(listen string, defaultPort uint16) (string, error) {
 		return "", fmt.Errorf("invalid listen: %s, error: invalid port", listen)
 	}
 	return net.JoinHostPort(ip.String(), strconv.FormatUint(portUint16, 10)), nil
+}
+
+func (s *APIServer) versionInfo() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		data := map[string]any{
+			"version":         constant.Version,
+			"plugin-matcher":  plugin.PluginMatcherTypes(),
+			"plugin-executor": plugin.PluginExecutorTypes(),
+		}
+		raw, err := json.Marshal(data)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(raw)
+		}
+	}
 }
 
 func (s *APIServer) debugHTTPHandler() http.Handler {
@@ -156,6 +176,7 @@ func (s *APIServer) initHTTPRouter() http.Handler {
 		if s.secret != "" {
 			r.Use(s.authHTTPHandler())
 		}
+		r.Mount("/version", s.versionInfo())
 		upstreamRouter := chi.NewRouter()
 		upstreams := s.core.GetUpstreams()
 		for _, u := range upstreams {
