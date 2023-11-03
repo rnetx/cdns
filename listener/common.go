@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/rnetx/cdns/adapter"
+	"github.com/rnetx/cdns/constant"
 	"github.com/rnetx/cdns/log"
 	"github.com/rnetx/cdns/utils"
 
@@ -157,12 +158,14 @@ func listenerHandle(ctx context.Context, listener string, logger log.Logger, wor
 	ctx = adapter.SaveLogContext(ctx, dnsCtx)
 	messageInfo := reqMessageInfo(req)
 	logger.InfofContext(ctx, "new request: %s", messageInfo)
-	defer func() {
-		err := recover()
-		if err != nil {
-			logger.FatalfContext(ctx, "handle request failed: %s, error(painc): %s", messageInfo, err)
-		}
-	}()
+	if !constant.ListenerEnablePainc {
+		defer func() {
+			err := recover()
+			if err != nil {
+				logger.FatalfContext(ctx, "handle request failed: %s, error(painc): %s", messageInfo, err)
+			}
+		}()
+	}
 	_, err := workflow.Exec(ctx, dnsCtx)
 	if err != nil {
 		logger.ErrorfContext(ctx, "handle request failed: %s, error: %s", messageInfo, err)

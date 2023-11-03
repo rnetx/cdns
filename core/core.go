@@ -256,7 +256,7 @@ func (c *Core) Run() error {
 			err = starter.Start()
 			if err != nil {
 				err = fmt.Errorf("start upstream[%s] failed: %s", u.Tag(), err)
-				c.rootLogger.Fatal(err)
+				c.coreLogger.Fatal(err)
 				return err
 			}
 		}
@@ -267,7 +267,7 @@ func (c *Core) Run() error {
 		err = c.ntpServer.Start()
 		if err != nil {
 			err = fmt.Errorf("start ntp server failed: %s", err)
-			c.rootLogger.Fatal(err)
+			c.coreLogger.Fatal(err)
 			return err
 		}
 		defer func() {
@@ -302,7 +302,7 @@ func (c *Core) Run() error {
 				err = starter.Start()
 				if err != nil {
 					err = fmt.Errorf("start plugin matcher[%s] failed: %s", pm.Tag(), err)
-					c.rootLogger.Fatal(err)
+					c.coreLogger.Fatal(err)
 					return err
 				}
 			}
@@ -332,7 +332,7 @@ func (c *Core) Run() error {
 				err = starter.Start()
 				if err != nil {
 					err = fmt.Errorf("start plugin executor[%s] failed: %s", pe.Tag(), err)
-					c.rootLogger.Fatal(err)
+					c.coreLogger.Fatal(err)
 					return err
 				}
 			}
@@ -343,7 +343,7 @@ func (c *Core) Run() error {
 		err = w.Check()
 		if err != nil {
 			err = fmt.Errorf("check workflow[%s] failed: %s", w.Tag(), err)
-			c.rootLogger.Fatal(err)
+			c.coreLogger.Fatal(err)
 			return err
 		}
 	}
@@ -369,7 +369,7 @@ func (c *Core) Run() error {
 			err = starter.Start()
 			if err != nil {
 				err = fmt.Errorf("start listener[%s] failed: %s", l.Tag(), err)
-				c.rootLogger.Fatal(err)
+				c.coreLogger.Fatal(err)
 				return err
 			}
 		}
@@ -387,7 +387,7 @@ func (c *Core) Run() error {
 		err = c.apiServer.Start()
 		if err != nil {
 			err = fmt.Errorf("start api server failed: %s", err)
-			c.rootLogger.Fatal(err)
+			c.coreLogger.Fatal(err)
 			return err
 		}
 	}

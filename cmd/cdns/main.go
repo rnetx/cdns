@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -29,6 +30,14 @@ var MainCommand = &cobra.Command{
 var configPath string
 
 func init() {
+	//
+	{
+		e, err := strconv.ParseBool(os.Getenv("CDNS_LISTENER_ENABLE_PANIC"))
+		if err == nil && e {
+			constant.ListenerEnablePainc = true
+		}
+	}
+	//
 	MainCommand.PersistentFlags().StringVarP(&configPath, "config", "c", "config.yaml", "config file path")
 	MainCommand.AddCommand(versionCommand)
 }
@@ -55,6 +64,9 @@ func run() int {
 	coreLogger.Infof("cdns %s", constant.Version)
 	coreLogger.Infof("plugin matcher: %s", strings.Join(plugin.PluginMatcherTypes(), ", "))
 	coreLogger.Infof("plugin executor: %s", strings.Join(plugin.PluginExecutorTypes(), ", "))
+	if constant.ListenerEnablePainc {
+		coreLogger.Infof("debug: listener enable painc")
+	}
 	go signalHandle(cancel, coreLogger)
 	err = c.Run()
 	if err != nil {
