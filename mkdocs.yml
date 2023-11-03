@@ -1,0 +1,106 @@
+site_name: cdns
+site_url: https://github.com/rnetx/cdns
+site_author: 0xffffhary
+site_description: cdns wiki
+repo_url: https://github.com/rnetx/cdns
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.path
+    - navigation.expand
+    - navigation.indexes
+    - navigation.tabs
+    - toc.follow
+    - toc.integrate
+    - header.autohide
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+      toc_depth: 3
+      anchorlink: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - attr_list
+  - md_in_html
+  - footnotes
+  - def_list
+
+nav:
+  - '基本配置':
+    - '简介':
+      - index.md
+      - '示例配置': example.md
+    - '配置结构': global.md
+    - '日志配置 (Log)': log/log.md
+    - 'API 配置 (API)': api/api.md
+    - 'NTP 服务器配置 (NTP)': ntp.md
+    - '上游服务器 (Upstream)':
+      - upstream/index.md
+      - 'TCP': upstream/tcp.md
+      - 'UDP': upstream/udp.md
+      - 'TLS': upstream/tls.md
+      - 'HTTPS': upstream/https.md
+      - 'QUIC': upstream/quic.md
+      - 'Parallel': upstream/parallel.md
+      - 'Random': upstream/random.md
+      - 'QueryTest': upstream/querytest.md
+      - 'Hosts': upstream/hosts.md
+      - 'DHCP': upstream/dhcp.md
+    - '监听器 (Listener)':
+      - listener/index.md
+      - 'TCP': listener/tcp.md
+      - 'UDP': listener/udp.md
+      - 'TLS': listener/tls.md
+      - 'HTTP': listener/http.md
+      - 'QUIC': listener/quic.md
+    - '工作流程 (Workflow)':
+      - workflow/index.md
+      - '匹配器': workflow/matcher.md
+      - '执行器': workflow/executor.md
+  - '匹配器插件':
+    - plugin/matcher/index.md
+    - 'geosite': plugin/matcher/geosite.md
+    - 'maxminddb': plugin/matcher/maxminddb.md
+    - 'domain': plugin/matcher/domain.md
+    - 'ip': plugin/matcher/ip.md
+    - 'script': plugin/matcher/script.md
+  - '执行器插件':
+    - plugin/executor/index.md
+    - 'memcache': plugin/executor/memcache.md
+    - 'rediscache': plugin/executor/rediscache.md
+    - 'script': plugin/executor/script.md
+    - 'ecs': plugin/executor/ecs.md
+    - 'ipset': plugin/executor/ipset.md

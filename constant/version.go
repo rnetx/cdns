@@ -2,5 +2,5 @@ package constant
 
 var (
 	Version = "unknown"
-	Author  = "yaott"
+	Author  = "0xffffharry"
 )
