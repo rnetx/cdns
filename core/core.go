@@ -30,10 +30,11 @@ func init() {
 var _ adapter.Core = (*Core)(nil)
 
 type Core struct {
-	ctx         context.Context
-	rootLogger  log.Logger
-	coreLogger  log.Logger
-	closeOutput io.Closer
+	ctx             context.Context
+	rootLogger      log.Logger
+	broadcastLogger *log.BroadcastLogger
+	coreLogger      log.Logger
+	closeOutput     io.Closer
 	//
 	apiServer *api.APIServer
 	//
@@ -53,19 +54,12 @@ type Core struct {
 
 func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, error) {
 	level := log.LevelInfo
-	switch options.Log.Level {
-	case "debug", "Debug":
-		level = log.LevelDebug
-	case "info", "Info", "":
-		level = log.LevelInfo
-	case "warn", "Warn", "warning", "Warning":
-		level = log.LevelWarn
-	case "error", "Error":
-		level = log.LevelError
-	case "fatal", "Fatal":
-		level = log.LevelFatal
-	default:
-		return nil, nil, fmt.Errorf("invalid log level: %s", options.Log.Level)
+	if options.Log.Level != "" {
+		var err error
+		level, err = log.ParseLevelString(options.Log.Level)
+		if err != nil {
+			return nil, nil, fmt.Errorf("parse log level failed: %s", err)
+		}
 	}
 	var logOutput io.Writer
 	switch options.Log.Output {
@@ -90,6 +84,11 @@ func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, er
 	if closer, isCloser := logOutput.(io.Closer); isCloser {
 		c.closeOutput = closer
 	}
+	basicLogger := c.rootLogger
+	if options.API != nil {
+		c.broadcastLogger = log.NewBroadcastLogger(c.rootLogger)
+		basicLogger = c.broadcastLogger
+	}
 	if len(options.Upstreams) == 0 {
 		return nil, nil, fmt.Errorf("missing upstreams")
 	}
@@ -104,7 +103,7 @@ func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, er
 		if ok {
 			return nil, nil, fmt.Errorf("create upstream[%d] failed: duplicate upstream tag: %s", i, tag)
 		}
-		upstreamLogger := log.NewTagLogger(c.rootLogger, fmt.Sprintf("upstream/%s", tag), aurora.GreenFg)
+		upstreamLogger := log.NewTagLogger(basicLogger, fmt.Sprintf("upstream/%s", tag), aurora.GreenFg)
 		u, err := upstream.NewUpstream(c.ctx, c, upstreamLogger, tag, upstreamOptions)
 		if err != nil {
 			return nil, nil, fmt.Errorf("create upstream[%d] failed: %s", i, err)
@@ -131,7 +130,7 @@ func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, er
 		if ok {
 			return nil, nil, fmt.Errorf("create workflow[%d] failed: duplicate workflow tag: %s", i, tag)
 		}
-		workflowLogger := log.NewTagLogger(c.rootLogger, fmt.Sprintf("workflow/%s", tag), aurora.CyanFg)
+		workflowLogger := log.NewTagLogger(basicLogger, fmt.Sprintf("workflow/%s", tag), aurora.CyanFg)
 		w, err := workflow.NewWorkflow(c.ctx, c, workflowLogger, tag, workflowOptions)
 		if err != nil {
 			return nil, nil, fmt.Errorf("create workflow[%d] failed: %s", i, err)
@@ -153,7 +152,7 @@ func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, er
 		if ok {
 			return nil, nil, fmt.Errorf("create listener[%d] failed: duplicate listener tag: %s", i, tag)
 		}
-		listenerLogger := log.NewTagLogger(c.rootLogger, fmt.Sprintf("listener/%s", tag), aurora.YellowFg)
+		listenerLogger := log.NewTagLogger(basicLogger, fmt.Sprintf("listener/%s", tag), aurora.YellowFg)
 		l, err := listener.NewListener(c.ctx, c, listenerLogger, tag, listenerOptions)
 		if err != nil {
 			return nil, nil, fmt.Errorf("create listener[%d] failed: %s", i, err)
@@ -173,7 +172,7 @@ func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, er
 			if ok {
 				return nil, nil, fmt.Errorf("create plugin matcher[%d] failed: duplicate plugin matcher tag: %s", i, tag)
 			}
-			pluginMatcherLogger := log.NewTagLogger(c.rootLogger, fmt.Sprintf("plugin-matcher/%s", tag), aurora.MagentaFg)
+			pluginMatcherLogger := log.NewTagLogger(basicLogger, fmt.Sprintf("plugin-matcher/%s", tag), aurora.MagentaFg)
 			pm, err := plugin.NewPluginMatcher(c.ctx, c, pluginMatcherLogger, tag, pluginMatcherOptions.Type, pluginMatcherOptions.Args)
 			if err != nil {
 				return nil, nil, fmt.Errorf("create plugin matcher[%d] failed: %s", i, err)
@@ -194,7 +193,7 @@ func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, er
 			if ok {
 				return nil, nil, fmt.Errorf("create plugin executor[%d] failed: duplicate plugin executor tag: %s", i, tag)
 			}
-			pluginExecutorLogger := log.NewTagLogger(c.rootLogger, fmt.Sprintf("plugin-executor/%s", tag), aurora.BlueFg)
+			pluginExecutorLogger := log.NewTagLogger(basicLogger, fmt.Sprintf("plugin-executor/%s", tag), aurora.BlueFg)
 			pe, err := plugin.NewPluginExecutor(c.ctx, c, pluginExecutorLogger, tag, pluginExecutorOptions.Type, pluginExecutorOptions.Args)
 			if err != nil {
 				return nil, nil, fmt.Errorf("create plugin executor[%d] failed: %s", i, err)
@@ -204,14 +203,15 @@ func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, er
 		}
 	}
 	if options.API != nil {
-		apiServerLogger := log.NewTagLogger(c.rootLogger, "api-server", aurora.RedFg)
+		apiServerLogger := log.NewTagLogger(basicLogger, "api-server", aurora.RedFg)
 		c.apiServer, err = api.NewAPIServer(c.ctx, c, apiServerLogger, *options.API)
 		if err != nil {
 			return nil, nil, fmt.Errorf("create api server failed: %s", err)
 		}
+		c.apiServer.SetBroadcastLogger(c.broadcastLogger)
 	}
 	if options.NTP != nil {
-		ntpServerLogger := log.NewTagLogger(c.rootLogger, "ntp", aurora.CyanFg)
+		ntpServerLogger := log.NewTagLogger(basicLogger, "ntp", aurora.CyanFg)
 		ntpServer, err := ntp.NewNTPServer(c.ctx, c, ntpServerLogger, *options.NTP)
 		if err != nil {
 			return nil, nil, err

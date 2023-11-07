@@ -20,6 +20,10 @@ func NewSafeChan[T any](size int) *SafeChan[T] {
 	return c
 }
 
+func (c *SafeChan[T]) Counter() int {
+	return int(c.n.Load())
+}
+
 func (c *SafeChan[T]) Clone() *SafeChan[T] {
 	c.n.Add(1)
 	return c
