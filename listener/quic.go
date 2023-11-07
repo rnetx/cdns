@@ -249,5 +249,5 @@ func (l *QUICListener) serveStream(quicConn quic.Connection, stream quic.Stream,
 }
 
 func (l *QUICListener) Handle(ctx context.Context, req *dns.Msg, clientAddr netip.AddrPort) *dns.Msg {
-	return listenerHandle(ctx, l.listen, l.logger, l.workflow, req, clientAddr)
+	return listenerHandle(ctx, l.tag, l.logger, l.workflow, req, clientAddr)
 }

@@ -152,7 +152,7 @@ func (l *UDPListener) serve(buf []byte, addr netip.AddrPort) {
 }
 
 func (l *UDPListener) Handle(ctx context.Context, req *dns.Msg, clientAddr netip.AddrPort) *dns.Msg {
-	return listenerHandle(ctx, l.listen, l.logger, l.workflow, req, clientAddr)
+	return listenerHandle(ctx, l.tag, l.logger, l.workflow, req, clientAddr)
 }
 
 // from mosdns(https://github.com/IrineSistiana/mosdns), thank for @IrineSistiana

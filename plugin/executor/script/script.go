@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -155,12 +156,18 @@ func (s *Script) runScript(m map[string]string) {
 	} else {
 		cmd = exec.CommandContext(s.commandCtx, s.command)
 	}
+	cmd.Env = os.Environ()
+	for k, v := range m {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
 	err := cmd.Run()
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			s.logger.Errorf("run script failed: %s, error: %s", cmd.String(), err)
 		}
+		return
 	}
+	s.logger.Debugf("run script success: %s", cmd.String())
 }
 
 func (s *Script) LoadRunningArgs(_ context.Context, _ any) (uint16, error) {
