@@ -45,7 +45,8 @@ type APIServer struct {
 	secret string
 	debug  bool
 
-	listener        net.Listener
+	listener net.Listener
+
 	broadcastLogger *log.BroadcastLogger
 }
 
@@ -201,15 +202,16 @@ func (s *APIServer) logWebsocketHandler() http.HandlerFunc {
 			}
 		}
 
-		var conn net.Conn
-		if r.Header.Get("Upgrade") == "websocket" {
-			var err error
-			conn, _, _, err = ws.UpgradeHTTP(r, w)
-			if err != nil {
-				return
-			}
-			defer conn.Close()
+		if r.Header.Get("Upgrade") != "websocket" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
+
+		conn, _, _, err := ws.UpgradeHTTP(r, w)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
 
 		ctx := r.Context()
 		ch := s.broadcastLogger.Register(ctx)
@@ -221,7 +223,6 @@ func (s *APIServer) logWebsocketHandler() http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 		}
 
-		var err error
 		buf := &bytes.Buffer{}
 		encoder := json.NewEncoder(buf)
 		for {
@@ -275,7 +276,9 @@ func (s *APIServer) initHTTPRouter() http.Handler {
 		if s.secret != "" {
 			r.Use(s.authHTTPHandler())
 		}
-		r.Mount("/log", s.logWebsocketHandler())
+		if s.broadcastLogger != nil {
+			r.Mount("/log", s.logWebsocketHandler())
+		}
 		r.Mount("/version", s.versionInfo())
 		upstreamRouter := chi.NewRouter()
 		upstreams := s.core.GetUpstreams()
