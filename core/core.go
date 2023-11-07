@@ -30,11 +30,10 @@ func init() {
 var _ adapter.Core = (*Core)(nil)
 
 type Core struct {
-	ctx             context.Context
-	rootLogger      log.Logger
-	broadcastLogger *log.BroadcastLogger
-	coreLogger      log.Logger
-	closeOutput     io.Closer
+	ctx        context.Context
+	rootLogger log.Logger
+	coreLogger log.Logger
+	logOutput  io.Writer
 	//
 	apiServer *api.APIServer
 	//
@@ -53,41 +52,47 @@ type Core struct {
 }
 
 func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, error) {
-	level := log.LevelInfo
-	if options.Log.Level != "" {
-		var err error
-		level, err = log.ParseLevelString(options.Log.Level)
-		if err != nil {
-			return nil, nil, fmt.Errorf("parse log level failed: %s", err)
+	var (
+		logOutput  io.Writer
+		rootLogger log.Logger
+	)
+	if options.Log.Disabled {
+		rootLogger = log.NewNopLogger()
+	} else {
+		level := log.LevelInfo
+		if options.Log.Level != "" {
+			var err error
+			level, err = log.ParseLevelString(options.Log.Level)
+			if err != nil {
+				return nil, nil, fmt.Errorf("parse log level failed: %s", err)
+			}
 		}
-	}
-	var logOutput io.Writer
-	switch options.Log.Output {
-	case "stdout", "Stdout", "":
-		logOutput = os.Stdout
-	case "stderr", "Stderr":
-		logOutput = os.Stderr
-	default:
-		options.Log.DisableColor = true
-		f, err := os.OpenFile(options.Log.Output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
-		if err != nil {
-			return nil, nil, fmt.Errorf("open log file failed: %s", err)
+		switch options.Log.Output {
+		case "stdout", "Stdout", "":
+			logOutput = os.Stdout
+		case "stderr", "Stderr":
+			logOutput = os.Stderr
+		default:
+			options.Log.DisableColor = true
+			f, err := os.OpenFile(options.Log.Output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o666)
+			if err != nil {
+				return nil, nil, fmt.Errorf("open log file failed: %s", err)
+			}
+			logOutput = f
 		}
-		logOutput = f
+		rootLogger = log.NewSimpleLogger(logOutput, level, options.Log.DisableTimestamp, options.Log.DisableColor)
 	}
-	rootLogger := log.NewSimpleLogger(logOutput, level, options.Log.DisableTimestamp, options.Log.DisableColor)
 	c := &Core{
 		ctx:        ctx,
 		rootLogger: rootLogger,
 		coreLogger: log.NewTagLogger(rootLogger, "core", aurora.RedFg),
-	}
-	if closer, isCloser := logOutput.(io.Closer); isCloser {
-		c.closeOutput = closer
+		logOutput:  logOutput,
 	}
 	basicLogger := c.rootLogger
-	if options.API != nil {
-		c.broadcastLogger = log.NewBroadcastLogger(c.rootLogger)
-		basicLogger = c.broadcastLogger
+	var broadcastLogger *log.BroadcastLogger
+	if !options.Log.Disabled && options.API != nil {
+		broadcastLogger = log.NewBroadcastLogger(basicLogger)
+		basicLogger = broadcastLogger
 	}
 	if len(options.Upstreams) == 0 {
 		return nil, nil, fmt.Errorf("missing upstreams")
@@ -208,7 +213,7 @@ func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, er
 		if err != nil {
 			return nil, nil, fmt.Errorf("create api server failed: %s", err)
 		}
-		c.apiServer.SetBroadcastLogger(c.broadcastLogger)
+		c.apiServer.SetBroadcastLogger(broadcastLogger)
 	}
 	if options.NTP != nil {
 		ntpServerLogger := log.NewTagLogger(basicLogger, "ntp", aurora.CyanFg)
@@ -222,8 +227,12 @@ func NewCore(ctx context.Context, options Options) (adapter.Core, log.Logger, er
 }
 
 func (c *Core) Close() error {
-	if c.closeOutput != nil {
-		return c.closeOutput.Close()
+	logOutput := c.logOutput
+	if logOutput != nil {
+		closer, isCloser := logOutput.(io.Closer)
+		if isCloser {
+			return closer.Close()
+		}
 	}
 	return nil
 }

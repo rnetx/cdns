@@ -21,6 +21,7 @@ type Options struct {
 }
 
 type LogOptions struct {
+	Disabled         bool   `yaml:"disabled,omitempty"`
 	Level            string `yaml:"level,omitempty"`
 	Output           string `yaml:"output,omitempty"`
 	DisableTimestamp bool   `yaml:"disable-timestamp,omitempty"`
