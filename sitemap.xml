@@ -2,192 +2,197 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://github.com/rnetx/cdns/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/example/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/global/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/ntp/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/api/api/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/listener/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/listener/http/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/listener/quic/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/listener/tcp/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/listener/tls/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/listener/udp/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/log/log/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/plugin/executor/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/plugin/executor/ecs/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/plugin/executor/ipset/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/plugin/executor/memcache/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://github.com/rnetx/cdns/plugin/executor/rdns/</loc>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/plugin/executor/rediscache/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/plugin/executor/script/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/plugin/matcher/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/plugin/matcher/domain/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/plugin/matcher/geosite/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/plugin/matcher/ip/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/plugin/matcher/maxminddb/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/plugin/matcher/script/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/upstream/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/upstream/dhcp/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/upstream/hosts/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/upstream/https/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/upstream/parallel/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/upstream/querytest/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/upstream/quic/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/upstream/random/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/upstream/tcp/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/upstream/tls/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/upstream/udp/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/workflow/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/workflow/executor/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/rnetx/cdns/workflow/matcher/</loc>
-         <lastmod>2023-11-03</lastmod>
+         <lastmod>2023-11-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
