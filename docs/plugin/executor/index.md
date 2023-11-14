@@ -22,3 +22,4 @@ workflows:
 - [script](script)
 - [ecs](ecs)
 - [ipset](ipset)
+- [rdns](rdns)

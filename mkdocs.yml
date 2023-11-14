@@ -104,3 +104,4 @@ nav:
     - 'script': plugin/executor/script.md
     - 'ecs': plugin/executor/ecs.md
     - 'ipset': plugin/executor/ipset.md
+    - 'rdns': plugin/executor/rdns.md
