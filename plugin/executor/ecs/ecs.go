@@ -96,6 +96,9 @@ func (e *ECS) LoadRunningArgs(_ context.Context, _ any) (uint16, error) {
 }
 
 func (e *ECS) addECS(dnsCtx *adapter.DNSContext, req *dns.Msg) string {
+	if req.Question[0].Qclass != dns.ClassINET {
+		return ""
+	}
 	for _, rr := range req.Extra {
 		if opt, ok := rr.(*dns.OPT); ok {
 			for _, o := range opt.Option {
@@ -103,12 +106,22 @@ func (e *ECS) addECS(dnsCtx *adapter.DNSContext, req *dns.Msg) string {
 					return ""
 				}
 			}
+			edns0Subnet, s := e.newSubnetOption(dnsCtx)
+			opt.Option = append(opt.Option, edns0Subnet)
+			return s
 		}
 	}
-	if req.Question[0].Qclass != dns.ClassINET {
-		return ""
-	}
+	edns0Subnet, s := e.newSubnetOption(dnsCtx)
+	opt := new(dns.OPT)
+	opt.Hdr.Name = "."
+	opt.Hdr.Rrtype = dns.TypeOPT
+	opt.SetUDPSize(dns.DefaultMsgSize)
+	opt.Option = append(opt.Option, edns0Subnet)
+	req.Extra = append(req.Extra, opt)
+	return s
+}
 
+func (e *ECS) newSubnetOption(dnsCtx *adapter.DNSContext) (dns.EDNS0, string) {
 	edns0Subnet := new(dns.EDNS0_SUBNET)
 	clientIP := dnsCtx.ClientIP()
 	s := ""
@@ -120,32 +133,27 @@ func (e *ECS) addECS(dnsCtx *adapter.DNSContext, req *dns.Msg) string {
 			edns0Subnet.Family = 2
 			edns0Subnet.SourceNetmask = e.mask6
 		}
-		edns0Subnet.Address = clientIP.AsSlice()
+		addrBytes := clientIP.As16()
+		edns0Subnet.Address = addrBytes[:]
 		s = netip.PrefixFrom(clientIP, int(edns0Subnet.SourceNetmask)).String()
 	} else {
 		if clientIP.Is4() {
 			edns0Subnet.Family = 1
 			edns0Subnet.SourceNetmask = e.mask4
-			edns0Subnet.Address = e.ipv4.AsSlice()
+			addrBytes := e.ipv4.As16()
+			edns0Subnet.Address = addrBytes[:]
 			s = netip.PrefixFrom(e.ipv4, int(edns0Subnet.SourceNetmask)).String()
 		} else {
 			edns0Subnet.Family = 2
 			edns0Subnet.SourceNetmask = e.mask6
-			edns0Subnet.Address = e.ipv6.AsSlice()
+			addrBytes := e.ipv6.As16()
+			edns0Subnet.Address = addrBytes[:]
 			s = netip.PrefixFrom(e.ipv6, int(edns0Subnet.SourceNetmask)).String()
 		}
 	}
 	edns0Subnet.SourceScope = 0
 	edns0Subnet.Code = dns.EDNS0SUBNET
-
-	opt := new(dns.OPT)
-	opt.Hdr.Name = "."
-	opt.Hdr.Rrtype = dns.TypeOPT
-	opt.SetUDPSize(dns.DefaultMsgSize)
-	opt.Option = append(opt.Option, edns0Subnet)
-	req.Extra = append(req.Extra, opt)
-
-	return s
+	return edns0Subnet, s
 }
 
 func (e *ECS) Exec(ctx context.Context, dnsCtx *adapter.DNSContext, _ uint16) (adapter.ReturnMode, error) {
