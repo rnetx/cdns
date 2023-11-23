@@ -22,6 +22,7 @@ import (
 type DHCPUpstreamOptions struct {
 	Interface          string         `yaml:"interface"`
 	UseIPv6            bool           `yaml:"use-ipv6,omitempty"`
+	CheckInterval      utils.Duration `yaml:"check-interval,omitempty"`
 	ConnectTimeout     utils.Duration `yaml:"connect-timeout,omitempty"`
 	IdleTimeout        utils.Duration `yaml:"idle-timeout,omitempty"`
 	EDNS0              bool           `yaml:"edns0,omitempty"`
@@ -32,6 +33,7 @@ type DHCPUpstreamOptions struct {
 const (
 	DHCPUpstreamType          = "dhcp"
 	DHCPDefaultRequestTimeout = 5 * time.Second
+	DHCPDefaultCheckInterval  = 10 * time.Minute
 )
 
 var (
@@ -53,6 +55,7 @@ type DHCPUpstream struct {
 
 	connectTimeout time.Duration
 	idleTimeout    time.Duration
+	checkInterval  time.Duration
 
 	edns0 bool
 
@@ -89,6 +92,11 @@ func NewDHCPUpstream(ctx context.Context, core adapter.Core, logger log.Logger, 
 		u.idleTimeout = time.Duration(options.IdleTimeout)
 	} else {
 		u.idleTimeout = DefaultIdleTimeout
+	}
+	if options.CheckInterval > 0 {
+		u.checkInterval = time.Duration(options.CheckInterval)
+	} else {
+		u.checkInterval = DHCPDefaultCheckInterval
 	}
 	u.disableFallbackTCP = options.DisableFallbackTCP
 	u.enablePipeline = options.EnablePipeline
@@ -137,7 +145,7 @@ func (u *DHCPUpstream) Close() error {
 }
 
 func (u *DHCPUpstream) loopFetch() {
-	ticker := time.NewTicker(3 * time.Second)
+	ticker := time.NewTicker(u.checkInterval)
 	defer ticker.Stop()
 	for {
 		select {
@@ -326,6 +334,7 @@ func (u *DHCPUpstream) flushDNSUpstream(ips []string) (err error) {
 		}
 	}
 	u.upstreamMap = uus
+	u.upstreamAddresses = ips
 	for tag, uu := range olds {
 		if _, ok := removeMap[tag]; !ok {
 			continue
@@ -341,7 +350,6 @@ func (u *DHCPUpstream) flushDNSUpstream(ips []string) (err error) {
 		}
 	}
 	u.logger.Debugf("new upstream addresses: [%s]", strings.Join(add, ", "))
-	u.upstreamAddresses = ips
 	return nil
 }
 

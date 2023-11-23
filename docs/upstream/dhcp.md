@@ -5,6 +5,7 @@ upstreams:
     - tag: upstream
       type: dhcp
       interface: eth0 # 绑定的网卡，留空自动选择，可能会失败
+      # check-interval: 10m # 检查间隔，默认 10 分钟
       #
       # 以下配置是创建 UDP DNS 服务器时使用配置
       #
