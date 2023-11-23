@@ -159,36 +159,3 @@ func (d *DomainUDPAddr) Network() string {
 func (d *DomainUDPAddr) String() string {
 	return net.JoinHostPort(d.domain, strconv.Itoa(int(d.port)))
 }
-
-var (
-	fakeIPv4 = netip.MustParseAddr("255.127.0.1")
-	fakeIPv6 = netip.MustParseAddr("fd00::1")
-)
-
-func FakeIPv4SocksAddr() *SocksAddr {
-	return &SocksAddr{
-		ip:   fakeIPv4,
-		port: 1,
-	}
-}
-
-func FakeIPv4SocksAddrWithPort(port uint16) *SocksAddr {
-	return &SocksAddr{
-		ip:   fakeIPv4,
-		port: port,
-	}
-}
-
-func FakeIPv6SocksAddr() *SocksAddr {
-	return &SocksAddr{
-		ip:   fakeIPv6,
-		port: 1,
-	}
-}
-
-func FakeIPv6SocksAddrWithPort(port uint16) *SocksAddr {
-	return &SocksAddr{
-		ip:   fakeIPv6,
-		port: port,
-	}
-}
