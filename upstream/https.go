@@ -377,6 +377,12 @@ func (u *HTTPSUpstream) exchange(ctx context.Context, req *dns.Msg) (*dns.Msg, e
 	if err != nil {
 		return nil, fmt.Errorf("send http request failed: %s", err)
 	}
+
+	if httpResp.StatusCode != http.StatusOK {
+		httpResp.Body.Close()
+		return nil, fmt.Errorf("invalid http response status code: %d", httpResp.StatusCode)
+	}
+
 	buffer := bytes.NewBuffer(nil)
 	_, err = io.Copy(buffer, httpResp.Body)
 	httpResp.Body.Close()
