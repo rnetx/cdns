@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	os.Setenv("QUIC_GO_DISABLE_RECEIVE_BUFFER_WARNING", "true")
+	os.Setenv("QUIC_GO_DISABLE_RECEIVE_BUFFER_WARNING", "true") // QUIC GSO Setting
 }
 
 type Options struct {
@@ -34,6 +34,7 @@ type Options struct {
 	RandomOptions    *RandomUpstreamOptions
 	ParallelOptions  *ParallelUpstreamOptions
 	QueryTestOptions *QueryTestUpstreamOptions
+	FallbackOptions  *FallbackUpstreamOptions
 }
 
 type _Options struct {
@@ -80,6 +81,9 @@ func (o *Options) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	case QueryTestUpstreamType:
 		o.QueryTestOptions = &QueryTestUpstreamOptions{}
 		data = o.QueryTestOptions
+	case FallbackUpstreamType:
+		o.FallbackOptions = &FallbackUpstreamOptions{}
+		data = o.FallbackOptions
 	default:
 		return fmt.Errorf("unknown upstream type: %s", _o.Type)
 	}
@@ -167,6 +171,9 @@ func NewUpstream(ctx context.Context, core adapter.Core, logger log.Logger, tag 
 	case QueryTestUpstreamType:
 		noGeneric = true
 		u, err = NewQueryTestUpstream(ctx, core, logger, tag, *options.QueryTestOptions)
+	case FallbackUpstreamType:
+		noGeneric = true
+		u, err = NewFallbackUpstream(ctx, core, logger, tag, *options.FallbackOptions)
 	default:
 		return nil, fmt.Errorf("unknown upstream type: %s", options.Type)
 	}
